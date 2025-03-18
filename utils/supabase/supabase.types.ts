@@ -66,6 +66,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      score_board: {
+        Row: {
+          away: number;
+          home: number;
+          id: string;
+          room_id: string;
+        };
+        Insert: {
+          away: number;
+          home: number;
+          id?: string;
+          room_id?: string;
+        };
+        Update: {
+          away?: number;
+          home?: number;
+          id?: string;
+          room_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "score_board_room_id_fkey";
+            columns: ["room_id"];
+            isOneToOne: false;
+            referencedRelation: "rooms";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       trigger_log: {
         Row: {
           id: number;

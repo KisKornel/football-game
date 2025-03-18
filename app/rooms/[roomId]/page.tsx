@@ -51,8 +51,8 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
         .single();
 
       if (data) {
-        setUsername("");
         setLocalPlayer(data);
+        setUsername("");
 
         router.push(`/rooms/${roomId}/user/${data.id}`);
       }

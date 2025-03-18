@@ -4,22 +4,26 @@ import { supabase } from "@/utils/supabase/server";
 
 const AddRoom = () => {
   const addRoom = useGameStore((state) => state.addRoom);
+  const setScoreBoard = useGameStore((state) => state.setScoreBoard);
   const [roomName, setRoomName] = useState("");
 
   const createRoom = async (roomName: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: roomData } = await supabase
         .from("rooms")
         .insert([{ name: roomName }])
         .select()
         .single();
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      const { data: scoreBoardData } = await supabase
+        .from("score_board")
+        .insert([{ home: 0, away: 0, room_id: roomData?.id }])
+        .select()
+        .single();
 
-      if (data) {
-        addRoom(data.id, data);
+      if (roomData && scoreBoardData) {
+        addRoom(roomData.id, roomData);
+        setScoreBoard(scoreBoardData);
       }
     } catch (error) {
       console.error("Hiba a szoba létrehozásakor:", error);

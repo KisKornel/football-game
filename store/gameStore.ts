@@ -13,10 +13,25 @@ const useGameStore = create<State & Actions>()(
       id: "ball-1",
       color: Colors.RED,
       velocity: { x: 0, y: 0, z: 0 },
-      angularVelocity: { x: 0, y: 0, z: 0 },
-      position: { x: 0, y: 3, z: 0 },
-      controlledBy: "",
+      position: { x: 0, y: 0, z: 0 },
+      isCollision: false,
+      timestamp: Date.now(),
     },
+    scoreBoard: null,
+    setScoreBoard: (newScore) =>
+      set(() => ({
+        scoreBoard: newScore,
+      })),
+    updateScoreBoard: (newScore) =>
+      set((state) => {
+        if (!state.scoreBoard) {
+          console.warn("Score board is null, cannot update.");
+          return state;
+        }
+        return {
+          scoreBoard: { ...state.scoreBoard, ...newScore },
+        };
+      }),
     setLocalPlayer: (newPlayer) =>
       set(() => ({
         localPlayer: newPlayer,

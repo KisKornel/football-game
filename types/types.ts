@@ -20,11 +20,17 @@ export interface PlayerType {
 
 export interface BallType {
   id: string;
-  position: { x: number; y: number; z: number };
-  velocity: { x: number; y: number; z: number };
-  angularVelocity: { x: number; y: number; z: number };
   color: string;
-  controlledBy: string;
+  velocity: { x: number; y: number; z: number };
+  position: { x: number; y: number; z: number };
+  timestamp: number;
+}
+
+export interface ScoreBoardType {
+  id: string;
+  home: number;
+  away: number;
+  room_id: string;
 }
 
 export interface State {
@@ -32,9 +38,14 @@ export interface State {
   localPlayer: PlayerType | null;
   players: { [id: string]: PlayerType };
   ball: BallType;
+  scoreBoard: ScoreBoardType | null;
 }
 
 export interface Actions {
+  setScoreBoard: (newScore: ScoreBoardType | null) => void;
+  updateScoreBoard: (
+    newScore: Omit<Partial<ScoreBoardType>, "id" | "room_id">
+  ) => void;
   setLocalPlayer: (newPlayer: PlayerType | null) => void;
   updateLocalPlayer: (updateData: Omit<Partial<PlayerType>, "id">) => void;
   addRoom: (id: string, newRoom: RoomType) => void;

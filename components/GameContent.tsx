@@ -16,12 +16,8 @@ import Ground from "./Ground";
 import Goal from "./Goal";
 import { Colors, Controls } from "@/enums/keyControls";
 import { CharacterController } from "./CharacterController";
-import * as THREE from "three";
 import useGameStore from "@/store/gameStore";
-
-THREE.ColorManagement.enabled = true;
-
-const SET_INTERVAL = 0.1;
+import BallController from "./BallController";
 
 const FLOOR_SIZE = 50;
 const FLOOR_THICKNESS = 1;
@@ -31,6 +27,8 @@ const WALL_COLOR = Colors.ORANGE;
 const FLOOR_COLOR = Colors.GREEN;
 const ROTATION_SPEED = 0.5;
 const WALK_SPEED = 4;
+const BALL_RADIUS = 0.5;
+const GAP_WIDTH = 4;
 
 const keyboardMap: KeyboardControlsEntry<string>[] = [
   { name: Controls.FORWARD, keys: ["ArrowUp", "KeyW"] },
@@ -54,6 +52,9 @@ const ThreeScene = () => {
             intensity={0.65}
             castShadow
             position={[-15, 10, 15]}
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-bias={-0.00005}
           >
             <OrthographicCamera left={-22} right={15} top={10} bottom={-20} />
           </directionalLight>
@@ -66,27 +67,35 @@ const ThreeScene = () => {
               wallThickness={WALL_THICKNESS}
               floorColor={FLOOR_COLOR}
               wallColor={WALL_COLOR}
+              gapWidth={GAP_WIDTH}
             />
 
-            <Goal position={[0, 2.5, -FLOOR_SIZE / 2 - WALL_THICKNESS / 2]} />
             <Goal
-              position={[0, 2.5, FLOOR_SIZE / 2 + WALL_THICKNESS / 2]}
-              rotation={[0, Math.PI, 0]}
+              gapWidth={GAP_WIDTH}
+              position={[0, WALL_THICKNESS / 2, FLOOR_SIZE / 2]}
+              ballRadius={BALL_RADIUS}
+              wallHeight={WALL_HEIGHT}
+              wallThickness={WALL_THICKNESS}
+              team="home"
             />
 
-            {/*
-            <BallController
-              setInterval={SET_INTERVAL}
-              localPlayerId={localPlayer.id}
+            <Goal
+              gapWidth={GAP_WIDTH}
+              position={[0, WALL_THICKNESS / 2, -FLOOR_SIZE / 2]}
+              rotation={[0, Math.PI, 0]}
+              ballRadius={BALL_RADIUS}
+              wallHeight={WALL_HEIGHT}
+              wallThickness={WALL_THICKNESS}
+              team="away"
             />
-            */}
+
+            <BallController ballRadius={BALL_RADIUS} />
 
             {Object.keys(players).length > 0 &&
               Object.entries(players).map(([id, player]) => (
                 <CharacterController
                   key={id}
                   isLocal={id === localPlayer?.id}
-                  setInterval={SET_INTERVAL}
                   player={player}
                   rotationSpeed={ROTATION_SPEED}
                   walkSpeed={WALK_SPEED}

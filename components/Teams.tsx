@@ -2,26 +2,27 @@
 import React from "react";
 import { PlayerType, TeamType } from "@/types/types";
 import { DeleteIcon } from "./svg/deleteIcon";
-import useGameStore from "@/store/gameStore";
-import Loading from "./Loading";
 
 interface TeamsPorps {
   title: string;
+  localPlayer: PlayerType;
+  players: {
+    [id: string]: PlayerType;
+  };
   updatePlayerTeam?: (team: TeamType) => void;
   team: TeamType;
 }
 
-export const Teams = ({ title, team, updatePlayerTeam }: TeamsPorps) => {
-  const localPlayer = useGameStore((state) => state.localPlayer);
-  const players = useGameStore((state) => state.players);
-
+export const Teams = ({
+  title,
+  team,
+  localPlayer,
+  players,
+  updatePlayerTeam,
+}: TeamsPorps) => {
   const filteredPlayers = Object.entries(players).filter(
     ([_, player]) => player.team === team
   );
-
-  if (!localPlayer) {
-    return <Loading />;
-  }
 
   return (
     <div className="flex flex-col justify-start items-center gap-y-2 border-2 rounded-3xl border-slate-800 p-2 size-full overflow-auto">
@@ -42,9 +43,8 @@ export const Teams = ({ title, team, updatePlayerTeam }: TeamsPorps) => {
               } `}
             >
               <p>{player.username}</p>
-
               {team !== "no" &&
-                localPlayer?.id === id &&
+                localPlayer.id === id &&
                 !localPlayer.ready &&
                 updatePlayerTeam && (
                   <button

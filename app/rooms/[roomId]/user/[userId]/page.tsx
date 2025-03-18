@@ -126,12 +126,21 @@ const UserPage = ({
           <Teams
             title="Hazai csapat"
             team="home"
+            localPlayer={localPlayer}
+            players={players}
             updatePlayerTeam={updatePlayerTeam}
           />
-          <Teams title="Elérhető játékosok" team="no" />
+          <Teams
+            title="Elérhető játékosok"
+            team="no"
+            localPlayer={localPlayer}
+            players={players}
+          />
           <Teams
             title="Vendég csapat"
             team="away"
+            localPlayer={localPlayer}
+            players={players}
             updatePlayerTeam={updatePlayerTeam}
           />
         </div>

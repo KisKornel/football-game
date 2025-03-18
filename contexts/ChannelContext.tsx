@@ -14,7 +14,7 @@ interface ChannelContextProps {
   isConnected: boolean;
   isStartGame: boolean;
   onUpdatePlayer: (data: Partial<PlayerType>) => void;
-  onUpdateBall: (data: Omit<BallType, "id" | "color">) => void;
+  onUpdateBall: (data: Partial<BallType>) => void;
   onDeletePlayer: (id: string) => void;
 }
 
@@ -40,6 +40,8 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const updateBall = useGameStore((state) => state.updateBall);
   const updateRoom = useGameStore((state) => state.updateRoom);
+  const setScoreBoard = useGameStore((state) => state.setScoreBoard);
+  const updateScoreBoard = useGameStore((state) => state.updateScoreBoard);
 
   const [isStartGame, setIsStartGame] = useState(false);
 
@@ -62,7 +64,25 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
       }
     };
 
+    const getScoreBoard = async () => {
+      const { data: score_board, error } = await supabase
+        .from("score_board")
+        .select("*")
+        .eq("room_id", roomId)
+        .single();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (score_board) {
+        setScoreBoard(score_board);
+      }
+    };
+
     getPlayers();
+    getScoreBoard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
@@ -122,6 +142,21 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
             const { id } = payload.old as PlayerType;
 
             deletePlayer(id);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "score_board",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            const { home, away } = payload.new;
+            updateScoreBoard({ home, away });
           }
         }
       )
@@ -196,28 +231,11 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
     });
   };
 
-  const onUpdateBall = (data: Omit<BallType, "id" | "color">) => {
+  const onUpdateBall = (data: Partial<BallType>) => {
     channel?.send({
       type: "broadcast",
       event: "update_ball",
-      payload: {
-        position: {
-          x: data.position.x,
-          y: data.position.y,
-          z: data.position.z,
-        },
-        velocity: {
-          x: data.velocity.x,
-          y: data.velocity.y,
-          z: data.velocity.z,
-        },
-        angularVelocity: {
-          x: data.angularVelocity.x,
-          y: data.angularVelocity.y,
-          z: data.angularVelocity.z,
-        },
-        controlledBy: data.controlledBy,
-      } as BallType,
+      payload: data,
     });
   };
 

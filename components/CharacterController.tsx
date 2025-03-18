@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
@@ -13,7 +13,6 @@ import { PlayerType } from "@/types/types";
 import { useChannelContext } from "@/contexts/ChannelContext";
 
 interface CharacterControllerProps {
-  setInterval: number;
   player: PlayerType;
   isLocal: boolean;
   rotationSpeed: number;
@@ -21,7 +20,6 @@ interface CharacterControllerProps {
 }
 
 export const CharacterController = ({
-  setInterval,
   isLocal,
   player,
   rotationSpeed,
@@ -41,29 +39,20 @@ export const CharacterController = ({
   const cameraWorldPosition = useRef(new Vector3());
   const cameraLookAtWorldPosition = useRef(new Vector3());
   const cameraLookAt = useRef(new Vector3());
-
-  const interval = useRef(0);
+  const vecTargetPos = new THREE.Vector3();
+  const vecCurrentPos = new THREE.Vector3();
 
   const [, get] = useKeyboardControls<Controls>();
 
-  useFrame(({ camera }, delta) => {
+  useEffect(() => {
+    console.log("Init player position");
+
+    rb.current.setTranslation(player.position, true);
+  }, []);
+
+  useFrame(({ camera }) => {
     if (rb.current) {
       if (isLocal) {
-        interval.current += delta;
-
-        if (interval.current > setInterval) {
-          const position = rb.current.translation();
-          const rotationY = character.current.rotation.y;
-
-          onUpdatePlayer({
-            id: player.id,
-            position: { x: position.x, y: position.y, z: position.z },
-            rotation: rotationY,
-          });
-
-          interval.current = 0;
-        }
-
         const vel = rb.current.linvel();
         const movement = { x: 0, z: 0 };
 
@@ -94,6 +83,16 @@ export const CharacterController = ({
 
         rb.current.setLinvel(vel, true);
 
+        const position = rb.current.translation();
+        const rotationY = character.current.rotation.y;
+
+        onUpdatePlayer({
+          id: player.id,
+          position: { x: position.x, y: position.y, z: position.z },
+          rotation: rotationY,
+        });
+
+        //Camera
         container.current.rotation.y = MathUtils.lerp(
           container.current.rotation.y,
           rotationTarget.current,
@@ -111,14 +110,14 @@ export const CharacterController = ({
           camera.lookAt(cameraLookAt.current);
         }
       } else {
-        const targetPos = new THREE.Vector3(
+        const targetPos = vecTargetPos.set(
           player.position.x,
           player.position.y,
           player.position.z
         );
 
         const currentTranslation = rb.current.translation();
-        const currentPos = new THREE.Vector3(
+        const currentPos = vecCurrentPos.set(
           currentTranslation.x,
           currentTranslation.y,
           currentTranslation.z
@@ -129,19 +128,23 @@ export const CharacterController = ({
           rb.current.setTranslation(newPos, true);
         }
 
-        const targetEuler = new THREE.Euler(0, player.rotation, 0);
-        const targetQuat = new THREE.Quaternion().setFromEuler(targetEuler);
-        container.current.quaternion.slerp(targetQuat, 0.1);
-        rb.current.setRotation(container.current.quaternion, true);
+        character.current.rotation.y = lerpAngle(
+          character.current.rotation.y,
+          player.rotation,
+          0.1
+        );
       }
-
-      character.current.position.set(0, 0, 0);
-      character.current.rotation.set(0, 0, 0);
     }
   });
 
   return (
-    <RigidBody colliders="cuboid" type="dynamic" lockRotations ref={rb}>
+    <RigidBody
+      colliders="cuboid"
+      type="dynamic"
+      lockRotations
+      ref={rb}
+      name="player"
+    >
       <group ref={container}>
         <group ref={cameraTarget} position-z={1.5} />
         <group ref={cameraPosition} position-y={4} position-z={-4} />

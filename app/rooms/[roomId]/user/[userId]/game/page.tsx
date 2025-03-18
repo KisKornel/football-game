@@ -29,6 +29,8 @@ const GamePage = ({
   const setLocalPlayer = useGameStore((state) => state.setLocalPlayer);
   const localPlayer = useGameStore((state) => state.localPlayer);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
+  const scoreBoard = useGameStore((state) => state.scoreBoard);
+  const setScoreBoard = useGameStore((state) => state.setScoreBoard);
 
   useEffect(() => {
     if (!localPlayer) {
@@ -56,7 +58,7 @@ const GamePage = ({
   }, [userId]);
 
   const handleDeletePlayer = async () => {
-    if (!roomId || !userId) return;
+    if (!roomId || !userId || !scoreBoard) return;
 
     const { error } = await supabase.from("players").delete().eq("id", userId);
 
@@ -65,21 +67,35 @@ const GamePage = ({
       return;
     }
 
+    const { error: scoreBoardError } = await supabase
+      .from("score_board")
+      .update({ home: 0, away: 0 })
+      .eq("id", scoreBoard.id)
+      .eq("room_id", scoreBoard.room_id);
+
+    if (scoreBoardError) {
+      console.error("Error delete score board: ", error);
+      return;
+    }
+
     onDeletePlayer(userId);
     deletePlayer(userId);
     setLocalPlayer(null);
+    setScoreBoard(null);
 
     router.replace("/");
   };
 
-  if (!isConnected || !localPlayer) {
+  if (!isConnected || !localPlayer || !scoreBoard) {
     return <Loading />;
   }
 
   return (
     <div className="flex flex-col w-full h-screen">
       <div className="py-2 w-full flex flex-row justify-center items-center z-100 bg-slate-800">
-        <p>0 - 0</p>
+        <p>
+          Hazai {scoreBoard.home} - {scoreBoard.away} Vendég
+        </p>
         <button
           type="button"
           className="absolute right-1 top-0 flex flex-row justify-center items-center p-2 cursor-pointer"
