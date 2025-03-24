@@ -4,6 +4,7 @@ export type Database = {
       players: {
         Row: {
           color: string;
+          host: boolean;
           id: string;
           online: boolean;
           position: { x: number; y: number; z: number };
@@ -15,6 +16,7 @@ export type Database = {
         };
         Insert: {
           color: string;
+          host?: boolean;
           id?: string;
           online?: boolean;
           position: { x: number; y: number; z: number };
@@ -26,6 +28,7 @@ export type Database = {
         };
         Update: {
           color?: string;
+          host?: boolean;
           id?: string;
           online?: boolean;
           position?: { x: number; y: number; z: number };

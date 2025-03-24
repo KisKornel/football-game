@@ -2,10 +2,11 @@ import { Suspense, useState } from "react";
 import { CuboidCollider, RigidBody, RigidBodyProps } from "@react-three/rapier";
 import { Box, Text } from "@react-three/drei";
 import { MeshStandardMaterial } from "three";
-import { Colors } from "@/enums/keyControls";
+import { Colors } from "@/enums/enums";
 import { TeamType } from "@/types/types";
 import { supabase } from "@/utils/supabase/server";
 import useGameStore from "@/store/gameStore";
+import { useChannelContext } from "@/contexts/ChannelContext";
 
 interface GoalProps extends RigidBodyProps {
   gapWidth: number;
@@ -13,6 +14,7 @@ interface GoalProps extends RigidBodyProps {
   wallHeight: number;
   wallThickness: number;
   team: TeamType;
+  host: boolean;
 }
 
 const material = new MeshStandardMaterial({ color: Colors.GRAY });
@@ -23,10 +25,12 @@ const Goal = ({
   wallHeight,
   wallThickness,
   team,
+  host,
   ...props
 }: GoalProps) => {
+  const { onUpdateBall } = useChannelContext();
   const scoreBoard = useGameStore((state) => state.scoreBoard);
-  const updateBall = useGameStore((state) => state.updateBall);
+
   const [intersecting, setIntersection] = useState(false);
 
   const totalWidth = gapWidth + 2 * wallThickness;
@@ -38,22 +42,24 @@ const Goal = ({
     if (scoreBoard) {
       setIntersection(true);
 
-      const goal =
-        team === "home"
-          ? { home: scoreBoard.home + 1 }
-          : { away: scoreBoard.away + 1 };
+      if (host) {
+        const goal =
+          team === "home"
+            ? { home: scoreBoard.home + 1 }
+            : { away: scoreBoard.away + 1 };
 
-      const { error } = await supabase
-        .from("score_board")
-        .update(goal)
-        .eq("id", scoreBoard.id)
-        .eq("room_id", scoreBoard.room_id);
+        const { error } = await supabase
+          .from("score_board")
+          .update(goal)
+          .eq("id", scoreBoard.id)
+          .eq("room_id", scoreBoard.room_id);
 
-      if (error) {
-        console.error("Socer board update error: ", error);
+        if (error) {
+          console.error("Socer board update error: ", error);
+        }
+
+        onUpdateBall({ position: { x: 0, y: 10, z: 0 } });
       }
-
-      updateBall({ position: { x: 0, y: 5, z: 0 } });
     }
   };
 

@@ -16,14 +16,13 @@ export interface PlayerType {
   online: boolean;
   room_id: string;
   ready: boolean;
+  host: boolean;
 }
 
 export interface BallType {
   id: string;
   color: string;
-  velocity: { x: number; y: number; z: number };
   position: { x: number; y: number; z: number };
-  timestamp: number;
 }
 
 export interface ScoreBoardType {
@@ -47,11 +46,12 @@ export interface Actions {
     newScore: Omit<Partial<ScoreBoardType>, "id" | "room_id">
   ) => void;
   setLocalPlayer: (newPlayer: PlayerType | null) => void;
+  setBall: (newBall: BallType) => void;
   updateLocalPlayer: (updateData: Omit<Partial<PlayerType>, "id">) => void;
   addRoom: (id: string, newRoom: RoomType) => void;
   updateRoom: (id: string, updateData: Partial<RoomType>) => void;
   addPlayer: (id: string, newPlayer: PlayerType) => void;
   updatePlayer: (id: string, updatePlayer: Partial<PlayerType>) => void;
   deletePlayer: (id: string) => void;
-  updateBall: (updateBall: Partial<BallType>) => void;
+  updateBall: (newPosition: Pick<BallType, "position">) => void;
 }

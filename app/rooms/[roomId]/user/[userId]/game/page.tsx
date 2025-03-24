@@ -20,17 +20,17 @@ const GamePage = ({
   params: Promise<{ roomId: string; userId: string }>;
 }) => {
   const { roomId, userId } = use(params);
-  console.log(userId, roomId);
 
   const router = useRouter();
 
   const { isConnected, onDeletePlayer } = useChannelContext();
-
   const setLocalPlayer = useGameStore((state) => state.setLocalPlayer);
   const localPlayer = useGameStore((state) => state.localPlayer);
+  const players = useGameStore((state) => state.players);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
   const scoreBoard = useGameStore((state) => state.scoreBoard);
   const setScoreBoard = useGameStore((state) => state.setScoreBoard);
+  const ball = useGameStore((state) => state.ball);
 
   useEffect(() => {
     if (!localPlayer) {
@@ -58,7 +58,8 @@ const GamePage = ({
   }, [userId]);
 
   const handleDeletePlayer = async () => {
-    if (!roomId || !userId || !scoreBoard) return;
+    if (!roomId || !userId || !scoreBoard || !ball) return;
+    const isLastPlayer = Object.keys(players).length === 1;
 
     const { error } = await supabase.from("players").delete().eq("id", userId);
 
@@ -67,15 +68,17 @@ const GamePage = ({
       return;
     }
 
-    const { error: scoreBoardError } = await supabase
-      .from("score_board")
-      .update({ home: 0, away: 0 })
-      .eq("id", scoreBoard.id)
-      .eq("room_id", scoreBoard.room_id);
+    if (isLastPlayer) {
+      const { error: scoreBoardError } = await supabase
+        .from("score_board")
+        .update({ home: 0, away: 0 })
+        .eq("id", scoreBoard.id)
+        .eq("room_id", scoreBoard.room_id);
 
-    if (scoreBoardError) {
-      console.error("Error delete score board: ", error);
-      return;
+      if (scoreBoardError) {
+        console.error("Error delete score board: ", scoreBoardError);
+        return;
+      }
     }
 
     onDeletePlayer(userId);

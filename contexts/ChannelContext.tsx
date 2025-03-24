@@ -11,10 +11,12 @@ import { BallType, PlayerType, RoomType } from "@/types/types";
 import useGameStore from "@/store/gameStore";
 
 interface ChannelContextProps {
+  channel: RealtimeChannel | null;
   isConnected: boolean;
   isStartGame: boolean;
   onUpdatePlayer: (data: Partial<PlayerType>) => void;
-  onUpdateBall: (data: Partial<BallType>) => void;
+  onUpdateBall: (newPosition: Pick<BallType, "position">) => void;
+  onBallInteractions: (force: { x: number; y: number; z: number }) => void;
   onDeletePlayer: (id: string) => void;
 }
 
@@ -231,21 +233,31 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
     });
   };
 
-  const onUpdateBall = (data: Partial<BallType>) => {
+  const onUpdateBall = (newPosition: Pick<BallType, "position">) => {
     channel?.send({
       type: "broadcast",
       event: "update_ball",
-      payload: data,
+      payload: newPosition,
+    });
+  };
+
+  const onBallInteractions = (force: { x: number; y: number; z: number }) => {
+    channel?.send({
+      type: "broadcast",
+      event: "interactions_ball",
+      payload: force,
     });
   };
 
   return (
     <ChannelContext.Provider
       value={{
+        channel,
         isConnected,
         isStartGame,
         onUpdatePlayer,
         onDeletePlayer,
+        onBallInteractions,
         onUpdateBall,
       }}
     >

@@ -19,6 +19,7 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
   const router = useRouter();
 
   const setLocalPlayer = useGameStore((state) => state.setLocalPlayer);
+  const players = useGameStore((state) => state.players);
 
   const [username, setUsername] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +27,9 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
   const handleRegisterPlayer = async () => {
     try {
       if (!username || !roomId) return;
-
       setIsLoading(true);
+
+      const isFirstPlayer = Object.keys(players).length === 0;
 
       const position = {
         x: getRandomNumber(-15, 15),
@@ -35,7 +37,7 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
         z: getRandomNumber(-15, 15),
       };
 
-      const { data } = await supabase
+      const { data: player } = await supabase
         .from("players")
         .insert([
           {
@@ -45,16 +47,18 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
             color: generateRandomHexColor(),
             room_id: roomId,
             online: true,
+            host: isFirstPlayer ? true : false,
           },
         ])
         .select()
         .single();
 
-      if (data) {
-        setLocalPlayer(data);
+      if (player) {
+        setLocalPlayer(player);
+
         setUsername("");
 
-        router.push(`/rooms/${roomId}/user/${data.id}`);
+        router.push(`/rooms/${roomId}/user/${player.id}`);
       }
     } catch (error) {
       console.error("Hiba a játékos regisztrációja közben: ", error);

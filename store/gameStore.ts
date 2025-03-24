@@ -1,22 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
-import { Colors } from "@/enums/keyControls";
+import { devtools } from "zustand/middleware";
 import { State, Actions } from "@/types/types";
+import { Colors } from "@/enums/enums";
 
 const useGameStore = create<State & Actions>()(
   devtools((set) => ({
     rooms: {},
     localPlayer: null,
     players: {},
-    ball: {
-      id: "ball-1",
-      color: Colors.RED,
-      velocity: { x: 0, y: 0, z: 0 },
-      position: { x: 0, y: 0, z: 0 },
-      isCollision: false,
-      timestamp: Date.now(),
-    },
+    ball: { color: Colors.RED, position: { x: 0, y: 10, z: 0 } },
     scoreBoard: null,
     setScoreBoard: (newScore) =>
       set(() => ({
@@ -35,6 +28,10 @@ const useGameStore = create<State & Actions>()(
     setLocalPlayer: (newPlayer) =>
       set(() => ({
         localPlayer: newPlayer,
+      })),
+    setBall: (newBall) =>
+      set(() => ({
+        ball: newBall,
       })),
     updateRoom: (id, updateData) =>
       set((state) => {
@@ -102,9 +99,9 @@ const useGameStore = create<State & Actions>()(
           players: remainingPlayers,
         };
       }),
-    updateBall: (newState) =>
+    updateBall: (newPosition) =>
       set((state) => ({
-        ball: { ...state.ball, ...newState },
+        ball: { ...state.ball, ...newPosition },
       })),
   }))
 );

@@ -1,16 +1,17 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { MathUtils, Vector3 } from "three";
 import { Character } from "./Character";
-import { Controls } from "@/enums/keyControls";
+import { Controls } from "@/enums/enums";
 import * as THREE from "three";
-import { lerpAngle } from "@/utils/functions/functions";
+import { calculateImpulse, lerpAngle } from "@/utils/functions/functions";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { PlayerType } from "@/types/types";
 import { useChannelContext } from "@/contexts/ChannelContext";
+import useGameStore from "@/store/gameStore";
 
 interface CharacterControllerProps {
   player: PlayerType;
@@ -19,14 +20,17 @@ interface CharacterControllerProps {
   walkSpeed: number;
 }
 
+const KICK_THRESHOLD = 5;
+
 export const CharacterController = ({
   isLocal,
   player,
   rotationSpeed,
   walkSpeed,
 }: CharacterControllerProps) => {
-  const { onUpdatePlayer } = useChannelContext();
+  const { onUpdatePlayer, onBallInteractions } = useChannelContext();
   const color = useMemo(() => player.color, []);
+  const ball = useGameStore((state) => state.ball);
 
   const rb = useRef<RapierRigidBody>(null!);
   const container = useRef<THREE.Group>(null!);
@@ -44,12 +48,6 @@ export const CharacterController = ({
 
   const [, get] = useKeyboardControls<Controls>();
 
-  useEffect(() => {
-    console.log("Init player position");
-
-    rb.current.setTranslation(player.position, true);
-  }, []);
-
   useFrame(({ camera }) => {
     if (rb.current) {
       if (isLocal) {
@@ -60,6 +58,29 @@ export const CharacterController = ({
         if (get().backward) movement.z = -1;
         if (get().left) movement.x = 1;
         if (get().right) movement.x = -1;
+
+        if (get().kick) {
+          const pos = rb.current.translation();
+
+          const currentPlayerPos = new Vector3(pos.x, pos.y, pos.z);
+          const currentBallPos = new Vector3(
+            ball.position.x,
+            ball.position.y,
+            ball.position.z
+          );
+
+          if (currentBallPos.distanceTo(currentPlayerPos) <= KICK_THRESHOLD) {
+            console.log("Kick");
+
+            const force = calculateImpulse(
+              currentBallPos,
+              currentPlayerPos,
+              KICK_THRESHOLD
+            );
+
+            onBallInteractions(force);
+          }
+        }
 
         if (movement.x !== 0) {
           rotationTarget.current += degToRad(rotationSpeed) * movement.x;
@@ -143,6 +164,7 @@ export const CharacterController = ({
       type="dynamic"
       lockRotations
       ref={rb}
+      position={[player.position.x, player.position.y, player.position.z]}
       name="player"
     >
       <group ref={container}>

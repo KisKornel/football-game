@@ -64,6 +64,19 @@ const GroundWithHexagonGoals = ({
     [wallColor]
   );
 
+  const extrudeSettings = useMemo(
+    () => ({
+      depth: floorThickness,
+      bevelEnabled: false,
+    }),
+    [floorThickness]
+  );
+
+  const extrudeGeometry = useMemo(
+    () => new THREE.ExtrudeGeometry(hexShape, extrudeSettings),
+    [hexShape, extrudeSettings]
+  );
+
   const edges = [
     { start: v0, end: v1, isGoal: true },
     { start: v1, end: v2, isGoal: false },
@@ -87,14 +100,9 @@ const GroundWithHexagonGoals = ({
 
   return (
     <>
-      <RigidBody type="fixed">
+      <RigidBody type="fixed" colliders="trimesh">
         <mesh
-          geometry={
-            new THREE.ExtrudeGeometry(hexShape, {
-              depth: floorThickness,
-              bevelEnabled: false,
-            })
-          }
+          geometry={extrudeGeometry}
           material={floorMaterial}
           position={[0, -1, 0]}
           rotation={[Math.PI / 2, 0, 0]}

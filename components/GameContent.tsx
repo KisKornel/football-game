@@ -12,12 +12,12 @@ import {
 } from "@react-three/drei";
 import { Physics } from "@react-three/rapier";
 import Ground from "./Ground";
-//import BallController from "./BallController";
 import Goal from "./Goal";
-import { Colors, Controls } from "@/enums/keyControls";
+import { Colors, Controls } from "@/enums/enums";
 import { CharacterController } from "./CharacterController";
 import useGameStore from "@/store/gameStore";
-import BallController from "./BallController";
+import HostBallController from "./HostBallController";
+import ClientBallController from "./ClientBallController";
 
 const FLOOR_SIZE = 50;
 const FLOOR_THICKNESS = 1;
@@ -41,6 +41,14 @@ const keyboardMap: KeyboardControlsEntry<string>[] = [
 const ThreeScene = () => {
   const players = useGameStore((state) => state.players);
   const localPlayer = useGameStore((state) => state.localPlayer);
+
+  if (!localPlayer) {
+    return (
+      <div className="flex- flex-row size-full justify-center items-center">
+        Valami hiba történt a játékos betöltése közben!
+      </div>
+    );
+  }
 
   return (
     <KeyboardControls map={keyboardMap}>
@@ -77,6 +85,7 @@ const ThreeScene = () => {
               wallHeight={WALL_HEIGHT}
               wallThickness={WALL_THICKNESS}
               team="home"
+              host={localPlayer.host}
             />
 
             <Goal
@@ -87,15 +96,20 @@ const ThreeScene = () => {
               wallHeight={WALL_HEIGHT}
               wallThickness={WALL_THICKNESS}
               team="away"
+              host={localPlayer.host}
             />
 
-            <BallController ballRadius={BALL_RADIUS} />
+            {localPlayer.host ? (
+              <HostBallController ballRadius={BALL_RADIUS} />
+            ) : (
+              <ClientBallController ballRadius={BALL_RADIUS} />
+            )}
 
             {Object.keys(players).length > 0 &&
               Object.entries(players).map(([id, player]) => (
                 <CharacterController
                   key={id}
-                  isLocal={id === localPlayer?.id}
+                  isLocal={id === localPlayer.id}
                   player={player}
                   rotationSpeed={ROTATION_SPEED}
                   walkSpeed={WALK_SPEED}
