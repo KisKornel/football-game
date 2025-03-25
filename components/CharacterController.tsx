@@ -3,15 +3,13 @@ import { useMemo, useRef } from "react";
 import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { MathUtils, Vector3 } from "three";
 import { Character } from "./Character";
 import { Controls } from "@/enums/enums";
 import * as THREE from "three";
-import { calculateImpulse, lerpAngle } from "@/utils/functions/functions";
+import { lerpAngle } from "@/utils/functions/functions";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { PlayerType } from "@/types/types";
 import { useChannelContext } from "@/contexts/ChannelContext";
-import useGameStore from "@/store/gameStore";
 
 interface CharacterControllerProps {
   player: PlayerType;
@@ -20,67 +18,58 @@ interface CharacterControllerProps {
   walkSpeed: number;
 }
 
-const KICK_THRESHOLD = 5;
-
 export const CharacterController = ({
   isLocal,
   player,
   rotationSpeed,
   walkSpeed,
 }: CharacterControllerProps) => {
-  const { onUpdatePlayer, onBallInteractions } = useChannelContext();
+  const { onUpdatePlayer } = useChannelContext();
   const color = useMemo(() => player.color, []);
-  const ball = useGameStore((state) => state.ball);
 
   const rb = useRef<RapierRigidBody>(null!);
   const container = useRef<THREE.Group>(null!);
   const character = useRef<THREE.Group>(null!);
+  const cameraTarget = useRef<THREE.Group>(null!);
+  const cameraPosition = useRef<THREE.Group>(null!);
 
   const characterRotationTarget = useRef(0);
   const rotationTarget = useRef(0);
-  const cameraTarget = useRef<THREE.Group>(null!);
-  const cameraPosition = useRef<THREE.Group>(null!);
-  const cameraWorldPosition = useRef(new Vector3());
-  const cameraLookAtWorldPosition = useRef(new Vector3());
-  const cameraLookAt = useRef(new Vector3());
-  const vecTargetPos = new THREE.Vector3();
-  const vecCurrentPos = new THREE.Vector3();
+
+  const cameraWorldPosition = useRef(new THREE.Vector3());
+  const cameraLookAtWorldPosition = useRef(new THREE.Vector3());
+  const cameraLookAt = useRef(new THREE.Vector3());
+  const vecTargetPos = useRef(new THREE.Vector3());
+  const vecCurrentPos = useRef(new THREE.Vector3());
+
+  const lastNetworkUpdate = useRef(0);
 
   const [, get] = useKeyboardControls<Controls>();
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
     if (rb.current) {
+      const position = rb.current.translation();
+      const currentTime = clock.getElapsedTime() * 1000;
+
       if (isLocal) {
         const vel = rb.current.linvel();
+
+        if (currentTime - lastNetworkUpdate.current > 50) {
+          lastNetworkUpdate.current = currentTime;
+          const rotationY = character.current.rotation.y;
+          onUpdatePlayer({
+            id: player.id,
+            position: { x: position.x, y: position.y, z: position.z },
+            rotation: rotationY,
+          });
+        }
+
         const movement = { x: 0, z: 0 };
 
         if (get().forward) movement.z = 1;
         if (get().backward) movement.z = -1;
         if (get().left) movement.x = 1;
         if (get().right) movement.x = -1;
-
-        if (get().kick) {
-          const pos = rb.current.translation();
-
-          const currentPlayerPos = new Vector3(pos.x, pos.y, pos.z);
-          const currentBallPos = new Vector3(
-            ball.position.x,
-            ball.position.y,
-            ball.position.z
-          );
-
-          if (currentBallPos.distanceTo(currentPlayerPos) <= KICK_THRESHOLD) {
-            console.log("Kick");
-
-            const force = calculateImpulse(
-              currentBallPos,
-              currentPlayerPos,
-              KICK_THRESHOLD
-            );
-
-            onBallInteractions(force);
-          }
-        }
 
         if (movement.x !== 0) {
           rotationTarget.current += degToRad(rotationSpeed) * movement.x;
@@ -104,17 +93,8 @@ export const CharacterController = ({
 
         rb.current.setLinvel(vel, true);
 
-        const position = rb.current.translation();
-        const rotationY = character.current.rotation.y;
-
-        onUpdatePlayer({
-          id: player.id,
-          position: { x: position.x, y: position.y, z: position.z },
-          rotation: rotationY,
-        });
-
         //Camera
-        container.current.rotation.y = MathUtils.lerp(
+        container.current.rotation.y = THREE.MathUtils.lerp(
           container.current.rotation.y,
           rotationTarget.current,
           0.1
@@ -131,23 +111,15 @@ export const CharacterController = ({
           camera.lookAt(cameraLookAt.current);
         }
       } else {
-        const targetPos = vecTargetPos.set(
+        vecTargetPos.current.set(
           player.position.x,
           player.position.y,
           player.position.z
         );
+        vecCurrentPos.current.set(position.x, position.y, position.z);
 
-        const currentTranslation = rb.current.translation();
-        const currentPos = vecCurrentPos.set(
-          currentTranslation.x,
-          currentTranslation.y,
-          currentTranslation.z
-        );
-
-        if (currentPos.distanceTo(targetPos) > 0.1) {
-          const newPos = currentPos.lerp(targetPos, 0.1);
-          rb.current.setTranslation(newPos, true);
-        }
+        const newPos = vecCurrentPos.current.lerp(vecTargetPos.current, 0.1);
+        rb.current.setTranslation(newPos, true);
 
         character.current.rotation.y = lerpAngle(
           character.current.rotation.y,
@@ -166,6 +138,7 @@ export const CharacterController = ({
       ref={rb}
       position={[player.position.x, player.position.y, player.position.z]}
       name="player"
+      userData={{ playerId: player.id }}
     >
       <group ref={container}>
         <group ref={cameraTarget} position-z={1.5} />

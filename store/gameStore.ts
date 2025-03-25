@@ -9,7 +9,13 @@ const useGameStore = create<State & Actions>()(
     rooms: {},
     localPlayer: null,
     players: {},
-    ball: { color: Colors.RED, position: { x: 0, y: 10, z: 0 } },
+    ball: {
+      id: "ball-1",
+      color: Colors.RED,
+      position: { x: 0, y: 10, z: 0 },
+      lastUpdate: Date.now(),
+      lastTouchedBy: "",
+    },
     scoreBoard: null,
     setScoreBoard: (newScore) =>
       set(() => ({
@@ -28,10 +34,6 @@ const useGameStore = create<State & Actions>()(
     setLocalPlayer: (newPlayer) =>
       set(() => ({
         localPlayer: newPlayer,
-      })),
-    setBall: (newBall) =>
-      set(() => ({
-        ball: newBall,
       })),
     updateRoom: (id, updateData) =>
       set((state) => {
@@ -99,9 +101,9 @@ const useGameStore = create<State & Actions>()(
           players: remainingPlayers,
         };
       }),
-    updateBall: (newPosition) =>
+    updateBall: (updateBall) =>
       set((state) => ({
-        ball: { ...state.ball, ...newPosition },
+        ball: { ...state.ball, ...updateBall },
       })),
   }))
 );

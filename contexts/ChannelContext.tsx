@@ -15,8 +15,7 @@ interface ChannelContextProps {
   isConnected: boolean;
   isStartGame: boolean;
   onUpdatePlayer: (data: Partial<PlayerType>) => void;
-  onUpdateBall: (newPosition: Pick<BallType, "position">) => void;
-  onBallInteractions: (force: { x: number; y: number; z: number }) => void;
+  onUpdateBall: (data: Partial<BallType>) => void;
   onDeletePlayer: (id: string) => void;
 }
 
@@ -37,6 +36,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
 
   const deletedPlayer = new Set<string>("");
 
+  const ball = useGameStore((state) => state.ball);
   const addPlayer = useGameStore((state) => state.addPlayer);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
   const deletePlayer = useGameStore((state) => state.deletePlayer);
@@ -176,7 +176,11 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
         deletePlayer(id);
       })
       .on("broadcast", { event: "update_ball" }, ({ payload }) => {
-        updateBall(payload);
+        const { position, lastUpdate, lastTouchedBy } = payload;
+
+        if (lastUpdate > ball.lastUpdate) {
+          updateBall({ position, lastUpdate, lastTouchedBy });
+        }
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -233,19 +237,11 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
     });
   };
 
-  const onUpdateBall = (newPosition: Pick<BallType, "position">) => {
+  const onUpdateBall = (data: Partial<BallType>) => {
     channel?.send({
       type: "broadcast",
       event: "update_ball",
-      payload: newPosition,
-    });
-  };
-
-  const onBallInteractions = (force: { x: number; y: number; z: number }) => {
-    channel?.send({
-      type: "broadcast",
-      event: "interactions_ball",
-      payload: force,
+      payload: data,
     });
   };
 
@@ -257,7 +253,6 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
         isStartGame,
         onUpdatePlayer,
         onDeletePlayer,
-        onBallInteractions,
         onUpdateBall,
       }}
     >
