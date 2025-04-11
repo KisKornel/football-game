@@ -61,6 +61,7 @@ export const CharacterController = ({
             id: player.id,
             position: { x: position.x, y: position.y, z: position.z },
             rotation: rotationY,
+            updatedAt: new Date().toISOString(),
           });
         }
 
@@ -88,7 +89,7 @@ export const CharacterController = ({
         character.current.rotation.y = lerpAngle(
           character.current.rotation.y,
           characterRotationTarget.current,
-          0.1
+          0.1,
         );
 
         rb.current.setLinvel(vel, true);
@@ -97,7 +98,7 @@ export const CharacterController = ({
         container.current.rotation.y = THREE.MathUtils.lerp(
           container.current.rotation.y,
           rotationTarget.current,
-          0.1
+          0.1,
         );
 
         cameraPosition.current.getWorldPosition(cameraWorldPosition.current);
@@ -105,7 +106,7 @@ export const CharacterController = ({
 
         if (cameraTarget.current) {
           cameraTarget.current.getWorldPosition(
-            cameraLookAtWorldPosition.current
+            cameraLookAtWorldPosition.current,
           );
           cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
           camera.lookAt(cameraLookAt.current);
@@ -114,7 +115,7 @@ export const CharacterController = ({
         vecTargetPos.current.set(
           player.position.x,
           player.position.y,
-          player.position.z
+          player.position.z,
         );
         vecCurrentPos.current.set(position.x, position.y, position.z);
 
@@ -124,7 +125,7 @@ export const CharacterController = ({
         character.current.rotation.y = lerpAngle(
           character.current.rotation.y,
           player.rotation,
-          0.1
+          0.1,
         );
       }
     }

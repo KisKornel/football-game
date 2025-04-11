@@ -10,30 +10,30 @@ import {
   Sky,
   Stats,
 } from "@react-three/drei";
-import { Physics, RigidBody } from "@react-three/rapier";
+import { Physics } from "@react-three/rapier";
 import { Colors, Controls } from "@/enums/enums";
 import { CharacterController } from "./CharacterController";
 import useGameStore from "@/store/gameStore";
 import { BallController } from "./BallController";
-import { BoxGeometry, MeshStandardMaterial } from "three";
+import GroundWithHexagonGoals from "./Ground";
+import Goal from "./Goal";
 
 const FLOOR_SIZE = 50;
-//const FLOOR_THICKNESS = 1;
-//const WALL_HEIGHT = 3;
-//const WALL_THICKNESS = 1;
-//const WALL_COLOR = Colors.ORANGE;
-//const FLOOR_COLOR = Colors.GREEN;
+const FLOOR_THICKNESS = 1;
+const WALL_HEIGHT = 3;
+const WALL_THICKNESS = 1;
+const WALL_COLOR = Colors.ORANGE;
+const FLOOR_COLOR = Colors.GREEN;
 const ROTATION_SPEED = 0.5;
 const WALK_SPEED = 4;
 const BALL_RADIUS = 0.5;
-//const GAP_WIDTH = 4;
+const GAP_WIDTH = 4;
 
 const keyboardMap: KeyboardControlsEntry<string>[] = [
   { name: Controls.FORWARD, keys: ["ArrowUp", "KeyW"] },
   { name: Controls.BACKWARD, keys: ["ArrowDown", "KeyS"] },
   { name: Controls.LEFT, keys: ["ArrowLeft", "KeyA"] },
   { name: Controls.RIGHT, keys: ["ArrowRight", "KeyD"] },
-  { name: Controls.KICK, keys: ["KeyK"] },
 ];
 
 const ThreeScene = () => {
@@ -66,8 +66,7 @@ const ThreeScene = () => {
           </directionalLight>
           <ambientLight intensity={0.3} />
           <Physics debug>
-            {/**
-            <Ground
+            <GroundWithHexagonGoals
               floorSize={FLOOR_SIZE}
               floorThickness={FLOOR_THICKNESS}
               wallHeight={WALL_HEIGHT}
@@ -77,7 +76,7 @@ const ThreeScene = () => {
               gapWidth={GAP_WIDTH}
             />
 
-             <Goal
+            <Goal
               gapWidth={GAP_WIDTH}
               position={[0, WALL_THICKNESS / 2, FLOOR_SIZE / 2]}
               ballRadius={BALL_RADIUS}
@@ -97,17 +96,6 @@ const ThreeScene = () => {
               team="away"
               host={localPlayer.host}
             />
-             */}
-
-            <RigidBody type="fixed">
-              <mesh
-                geometry={new BoxGeometry(100, 100, 0.5)}
-                material={new MeshStandardMaterial({ color: Colors.GREEN })}
-                position={[0, -1, 0]}
-                rotation={[Math.PI / 2, 0, 0]}
-                receiveShadow
-              />
-            </RigidBody>
 
             <BallController
               ballRadius={BALL_RADIUS}

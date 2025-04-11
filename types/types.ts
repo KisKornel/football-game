@@ -17,13 +17,15 @@ export interface PlayerType {
   room_id: string;
   ready: boolean;
   host: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BallType {
   id: string;
   color: string;
   position: { x: number; y: number; z: number };
-  lastUpdate: number;
+  lastUpdate: string;
   lastTouchedBy: string;
 }
 
@@ -45,7 +47,7 @@ export interface State {
 export interface Actions {
   setScoreBoard: (newScore: ScoreBoardType | null) => void;
   updateScoreBoard: (
-    newScore: Omit<Partial<ScoreBoardType>, "id" | "room_id">
+    newScore: Omit<Partial<ScoreBoardType>, "id" | "room_id">,
   ) => void;
   setLocalPlayer: (newPlayer: PlayerType | null) => void;
   updateLocalPlayer: (updateData: Omit<Partial<PlayerType>, "id">) => void;

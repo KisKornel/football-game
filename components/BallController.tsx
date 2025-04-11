@@ -46,12 +46,12 @@ export const BallController = ({
       updateBall({
         position: newPosition,
         lastTouchedBy: playerId,
-        lastUpdate: Date.now(),
+        lastUpdate: new Date().toISOString(),
       });
       onUpdateBall({
         position: newPosition,
         lastTouchedBy: playerId,
-        lastUpdate: Date.now(),
+        lastUpdate: new Date().toISOString(),
       });
     }
   };
@@ -67,14 +67,17 @@ export const BallController = ({
           z: pos.z,
         };
 
-        onUpdateBall({ position: newPosition, lastUpdate: Date.now() });
+        onUpdateBall({
+          position: newPosition,
+          lastUpdate: new Date().toISOString(),
+        });
       } else {
         console.log("Ball: ", ball);
 
         targetPos.current.set(
           ball.position.x,
           ball.position.y,
-          ball.position.z
+          ball.position.z,
         );
         currentPos.current.set(pos.x, pos.y, pos.z);
 

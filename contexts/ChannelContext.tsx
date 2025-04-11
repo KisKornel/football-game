@@ -27,7 +27,7 @@ interface ChannelProviderProps {
 const MAX_GAME_MEMBERS = 2;
 
 const ChannelContext = createContext<ChannelContextProps | undefined>(
-  undefined
+  undefined,
 );
 
 export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
@@ -107,7 +107,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
             const { id, ...data } = payload.new as RoomType;
             updateRoom(id, { ...data });
           }
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -145,7 +145,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
 
             deletePlayer(id);
           }
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -160,7 +160,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
             const { home, away } = payload.new;
             updateScoreBoard({ home, away });
           }
-        }
+        },
       )
       .on("broadcast", { event: "update_player" }, ({ payload }) => {
         const { id, ...data } = payload as PlayerType;
