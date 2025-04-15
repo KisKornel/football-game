@@ -44,17 +44,17 @@ type ActionName =
   | "HumanArmature|Man_Walk";
 
 interface AnimatedManProps {
-  hairColor?: string;
-  shirtColor?: string;
-  pantsColor?: string;
+  hairColor: string;
+  shirtColor: string;
+  pantsColor: string;
 }
 
 const MOVEMENT_SPEED = 0.032;
 
-export function AnimatedMan({
-  hairColor = "green",
-  shirtColor = "pink",
-  pantsColor = "brown",
+export function Character({
+  hairColor,
+  shirtColor,
+  pantsColor,
   ...props
 }: AnimatedManProps & JSX.IntrinsicElements["group"]) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,7 +112,7 @@ export function AnimatedMan({
           >
             <primitive object={nodes.Bone} />
           </group>
-          <group name="BaseHuman" rotation={[-Math.PI / 2, 0, 0]} scale={100}>
+          <group name="BaseHuman" rotation={[-Math.PI / 2, 0, 0]} scale={30}>
             <skinnedMesh
               name="BaseHuman_1"
               geometry={nodes.BaseHuman_1.geometry}

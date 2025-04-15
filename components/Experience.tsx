@@ -14,11 +14,11 @@ import { Physics } from "@react-three/rapier";
 import React from "react";
 import SoccerGoal from "./SoccerGoal";
 import Wall from "./Wall";
-import { AnimatedMan } from "./AnimatedMan";
 import SoccerBall from "./SoccerBall";
 import useCharactersStore from "@/store/charactersStore";
 import SoccerField from "./SoccerField";
 import * as THREE from "three";
+import { Character } from "./Character";
 
 export const Experience = () => {
   const characters = useCharactersStore((state) => state.characters);
@@ -42,7 +42,7 @@ export const Experience = () => {
           rotation={{ x: 0, y: -Math.PI / 2, z: 0 }}
         />
         {characters.map((character) => (
-          <AnimatedMan
+          <Character
             key={character.id}
             position={
               new THREE.Vector3(
@@ -51,7 +51,6 @@ export const Experience = () => {
                 character.position.z,
               )
             }
-            userData={{ id: character.id }}
             hairColor={character.hairColor}
             shirtColor={character.shirtColor}
             pantsColor={character.pantsColor}

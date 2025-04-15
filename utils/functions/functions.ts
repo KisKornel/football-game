@@ -1,5 +1,3 @@
-import * as THREE from "three";
-
 export const generateRandomId = (): string => {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 10);
@@ -25,21 +23,4 @@ export const lerpAngle = (start: number, end: number, t: number) => {
   }
 
   return normalizeAngle(start + (end - start) * t);
-};
-
-export const calculateImpulse = (
-  ballPosition: THREE.Vector3,
-  playerPosition: THREE.Vector3,
-  impulseMagnitude: number,
-): THREE.Vector3 => {
-  const direction = new THREE.Vector3().subVectors(
-    ballPosition,
-    playerPosition,
-  );
-
-  direction.normalize();
-
-  direction.multiplyScalar(impulseMagnitude);
-
-  return direction;
 };

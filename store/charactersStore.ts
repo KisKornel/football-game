@@ -11,11 +11,12 @@ interface Actions {
   addCharacter: (character: CharacterType) => void;
   updateCharacter: (character: CharacterType) => void;
   removeCharacter: (id: string) => void;
+  getCharactersById: (id: string) => CharacterType | undefined;
 }
 
 const useCharactersStore = create<State & Actions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       characters: [],
       setCharacters: (characters) => set({ characters }),
       addCharacter: (character) =>
@@ -30,6 +31,11 @@ const useCharactersStore = create<State & Actions>()(
         set((state) => ({
           characters: state.characters.filter((c) => c.id !== id),
         })),
+      getCharactersById: (id) => {
+        const character = get().characters.find((c) => c.id === id);
+
+        return character;
+      },
     }),
     {
       name: "characters",
