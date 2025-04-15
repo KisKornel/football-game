@@ -1,45 +1,50 @@
+export type PositionType = { x: number; y: number; z: number };
+
 export type Database = {
   public: {
     Tables: {
-      players: {
+      characters: {
         Row: {
-          color: string;
           createdAt: string;
+          hairColor: string;
           host: boolean;
           id: string;
           online: boolean;
-          position: { x: number; y: number; z: number };
+          pantsColor: string;
+          position: PositionType;
           ready: boolean;
-          room_id: string;
-          rotation: number;
+          roomId: string;
+          shirtColor: string;
           team: Database["public"]["Enums"]["team"];
           updatedAt: string;
           username: string;
         };
         Insert: {
-          color: string;
           createdAt?: string;
+          hairColor: string;
           host?: boolean;
           id?: string;
           online?: boolean;
-          position: { x: number; y: number; z: number };
+          pantsColor: string;
+          position: PositionType;
           ready?: boolean;
-          room_id: string;
-          rotation: number;
+          roomId: string;
+          shirtColor: string;
           team?: Database["public"]["Enums"]["team"];
           updatedAt?: string;
           username: string;
         };
         Update: {
-          color?: string;
           createdAt?: string;
+          hairColor?: string;
           host?: boolean;
           id?: string;
           online?: boolean;
-          position?: { x: number; y: number; z: number };
+          pantsColor?: string;
+          position?: PositionType;
           ready?: boolean;
-          room_id?: string;
-          rotation?: number;
+          roomId?: string;
+          shirtColor?: string;
           team?: Database["public"]["Enums"]["team"];
           updatedAt?: string;
           username?: string;
@@ -47,7 +52,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "players_room_id_fkey";
-            columns: ["room_id"];
+            columns: ["roomId"];
             isOneToOne: false;
             referencedRelation: "rooms";
             referencedColumns: ["id"];
@@ -56,69 +61,22 @@ export type Database = {
       };
       rooms: {
         Row: {
-          created_at: string;
+          available: boolean;
+          createdAt: string;
           id: string;
-          is_available: boolean;
           name: string;
         };
         Insert: {
-          created_at?: string;
+          available?: boolean;
+          createdAt?: string;
           id?: string;
-          is_available?: boolean;
           name: string;
         };
         Update: {
-          created_at?: string;
+          available?: boolean;
+          createdAt?: string;
           id?: string;
-          is_available?: boolean;
           name?: string;
-        };
-        Relationships: [];
-      };
-      score_board: {
-        Row: {
-          away: number;
-          home: number;
-          id: string;
-          room_id: string;
-        };
-        Insert: {
-          away: number;
-          home: number;
-          id?: string;
-          room_id?: string;
-        };
-        Update: {
-          away?: number;
-          home?: number;
-          id?: string;
-          room_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "score_board_room_id_fkey";
-            columns: ["room_id"];
-            isOneToOne: false;
-            referencedRelation: "rooms";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      trigger_log: {
-        Row: {
-          id: number;
-          log_message: string | null;
-          log_time: string | null;
-        };
-        Insert: {
-          id?: number;
-          log_message?: string | null;
-          log_time?: string | null;
-        };
-        Update: {
-          id?: number;
-          log_message?: string | null;
-          log_time?: string | null;
         };
         Relationships: [];
       };

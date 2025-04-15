@@ -1,20 +1,18 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import React, { use, useEffect, useRef, useState } from "react";
+import React, { use, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/utils/supabase/server";
 import { useRouter } from "next/navigation";
-import Loading from "@/components/Loading";
-import useGameStore from "@/store/gameStore";
-import { useChannelContext } from "@/contexts/ChannelContext";
-import { TeamType } from "@/types/types";
+import useCharactersStore from "@/store/charactersStore";
+import { CharacterType, TeamType } from "@/types/types";
 import { Teams } from "@/components/Teams";
 import { Spinner } from "@/components/svg/spinner";
 import { ChooseTeam } from "@/components/ChooseTeam";
+import Loading from "@/components/Loading";
+import { useChannelContext } from "@/contexts/ChannelContext";
 
 const MAX_SIZE_TEAM = 1;
-const COUNTER = 5;
+const COUNTER = 2;
 
 const UserPage = ({
   params,
@@ -24,98 +22,113 @@ const UserPage = ({
   const { roomId, userId } = use(params);
   const router = useRouter();
 
-  const { isConnected, isStartGame } = useChannelContext();
+  const { isStartGame } = useChannelContext();
 
-  const setLocalPlayer = useGameStore((state) => state.setLocalPlayer);
-  const localPlayer = useGameStore((state) => state.localPlayer);
-  const players = useGameStore((state) => state.players);
-  const updateLocalPlayer = useGameStore((state) => state.updateLocalPlayer);
+  const characters = useCharactersStore((state) => state.characters);
 
   const [counter, setCounter] = useState<number>(COUNTER);
+  const [homeTeam, setHomeTeam] = useState<CharacterType[]>([]);
+  const [noTeam, setNoTeam] = useState<CharacterType[]>([]);
+  const [awayTeam, setAwayTeam] = useState<CharacterType[]>([]);
+
+  const localPlayer = useMemo(() => {
+    if (!userId) return;
+
+    const localPlayer = characters.filter((c) => c.id === userId)[0];
+    return localPlayer;
+  }, [characters, userId]);
+
+  useEffect(() => {
+    if (!characters.length) return;
+
+    const initTeams = () => {
+      const noTeams: CharacterType[] = [];
+      const homeTeams: CharacterType[] = [];
+      const awayTeams: CharacterType[] = [];
+
+      characters.map((c) => {
+        if (c.team === "no") {
+          noTeams.push(c);
+        }
+        if (c.team === "home") {
+          homeTeams.push(c);
+        }
+
+        if (c.team === "away") {
+          awayTeams.push(c);
+        }
+      });
+
+      setNoTeam(noTeams);
+      setHomeTeam(homeTeams);
+      setAwayTeam(awayTeams);
+    };
+
+    initTeams();
+  }, [characters]);
 
   const isTeamMaxSize = (team: TeamType) => {
-    const size = Object.entries(players).filter(
-      ([_, player]) => player.team === team
-    ).length;
+    const size = characters.filter((c) => c.team === team).length;
 
     return size === MAX_SIZE_TEAM;
   };
 
-  useEffect(() => {
-    if (!localPlayer) {
-      const getLocalPlayer = async () => {
-        console.log("Get local player");
+  const startCountdown = useCallback(
+    (seconds: number) => {
+      let count = seconds;
 
-        const { data, error } = await supabase
-          .from("players")
-          .select("*")
-          .eq("room_id", roomId)
-          .eq("id", userId);
+      const interval = setInterval(() => {
+        setCounter(count);
+        count--;
 
-        if (error) {
-          console.error("Error get local player: ", error);
-          return;
+        if (count < 0) {
+          clearInterval(interval);
+          console.log("Strating game...");
+          router.push(`/rooms/${roomId}/user/${userId}/game`);
         }
-
-        if (data) {
-          setLocalPlayer(data[0]);
-        }
-      };
-
-      getLocalPlayer();
-    }
-  }, [userId]);
+      }, 1000);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   useEffect(() => {
     if (isStartGame) {
       startCountdown(COUNTER - 1);
     }
-  }, [isStartGame]);
+  }, [isStartGame, startCountdown]);
 
-  const startCountdown = (seconds: number) => {
-    let count = seconds;
+  const updateReady = async () => {
+    try {
+      const { error } = await supabase
+        .from("characters")
+        .update({ ready: true })
+        .eq("id", userId);
 
-    const interval = setInterval(() => {
-      setCounter(count);
-      count--;
-
-      if (count < 0) {
-        clearInterval(interval);
-        console.log("Strating game...");
-        router.push(`/rooms/${roomId}/user/${userId}/game`);
+      if (error) {
+        throw new Error(`Player ready update error with ${userId} id`, error);
       }
-    }, 1000);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const updatePlayerTeam = async (team: TeamType) => {
-    const { error } = await supabase
-      .from("players")
-      .update({ team })
-      .eq("id", userId);
+    try {
+      const { error } = await supabase
+        .from("characters")
+        .update({ team })
+        .eq("id", userId);
 
-    if (error) {
-      console.error(`Player team update error with ${userId} id`, error);
+      if (error) {
+        throw new Error(`Player team update error with ${userId} id`, error);
+      }
+    } catch (error) {
+      console.log(error);
     }
-
-    updateLocalPlayer({ team });
   };
 
-  const updateReady = async () => {
-    if (!localPlayer) return;
-
-    const { error } = await supabase
-      .from("players")
-      .update({ ready: true })
-      .eq("id", userId);
-
-    if (error) {
-      console.log("Error: ", error);
-    }
-
-    updateLocalPlayer({ ready: true });
-  };
-
-  if (!isConnected || !localPlayer) {
+  if (!localPlayer) {
     return <Loading />;
   }
 
@@ -126,21 +139,21 @@ const UserPage = ({
           <Teams
             title="Hazai csapat"
             team="home"
-            localPlayer={localPlayer}
-            players={players}
+            userId={userId}
+            characters={homeTeam}
             updatePlayerTeam={updatePlayerTeam}
           />
           <Teams
             title="Elérhető játékosok"
             team="no"
-            localPlayer={localPlayer}
-            players={players}
+            userId={userId}
+            characters={noTeam}
           />
           <Teams
             title="Vendég csapat"
             team="away"
-            localPlayer={localPlayer}
-            players={players}
+            userId={userId}
+            characters={awayTeam}
             updatePlayerTeam={updatePlayerTeam}
           />
         </div>
@@ -163,10 +176,10 @@ const UserPage = ({
             </div>
           ) : (
             <div className="w-full flex flex-row justify-center items-start">
-              {Object.entries(players)
-                .filter(([id, player]) => player.room_id === roomId)
-                .some(([id, player]) => player.team === "no") ||
-              Object.keys(players).length !== MAX_SIZE_TEAM * 2 ? (
+              {characters
+                .filter((c) => c.roomId === roomId)
+                .some((c) => c.team === "no") ||
+              characters.length !== MAX_SIZE_TEAM * 2 ? (
                 <div>Várakozás a többi játékosra...</div>
               ) : (
                 <div>

@@ -2,17 +2,17 @@ import React from "react";
 import { TeamType } from "@/types/types";
 
 interface ChooseTeamProps {
-  updatePlayerTeam: (team: TeamType) => void;
   isMaxSize: boolean;
   team: TeamType;
   title: string;
+  updatePlayerTeam: (team: TeamType) => Promise<void>;
 }
 
 export const ChooseTeam = ({
-  updatePlayerTeam,
   isMaxSize,
   team,
   title,
+  updatePlayerTeam,
 }: ChooseTeamProps) => {
   return (
     <button

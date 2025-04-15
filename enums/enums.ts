@@ -1,11 +1,3 @@
-export enum Controls {
-  FORWARD = "forward",
-  BACKWARD = "backward",
-  LEFT = "left",
-  RIGHT = "right",
-  KICK = "kick",
-}
-
 export enum Colors {
   RED = "#fb2c36",
   ORANGE = "#ffa686",

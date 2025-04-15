@@ -9,7 +9,7 @@ interface RoomLayoutProps {
 }
 
 export default function RoomLayout({ children }: RoomLayoutProps) {
-  const params = useParams() as { roomId: string };
+  const params = useParams<{ roomId: string }>();
   const { roomId } = params;
 
   return <ChannelProvider roomId={roomId}>{children}</ChannelProvider>;

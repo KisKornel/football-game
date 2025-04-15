@@ -3,65 +3,76 @@
 import React, { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/server";
-import useGameStore from "@/store/gameStore";
+import useCharactersStore from "@/store/charactersStore";
 import { Spinner } from "@/components/svg/spinner";
-
-const getRandomNumber = (min: number, max: number) => {
-  return Math.random() * (max - min) + min;
-};
-
-const generateRandomHexColor = () => {
-  return "#" + Math.floor(Math.random() * 16777215).toString(16);
-};
 
 const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
   const { roomId } = use(params);
   const router = useRouter();
 
-  const setLocalPlayer = useGameStore((state) => state.setLocalPlayer);
-  const players = useGameStore((state) => state.players);
+  const characters = useCharactersStore((state) => state.characters);
 
-  const [username, setUsername] = useState<string>("");
+  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const getRandomNumber = (min: number, max: number) => {
+    return Math.random() * (max - min) + min;
+  };
+
+  const generateRandomHexColor = () => {
+    const n = (Math.random() * 0xfffff * 1000000).toString(16);
+    return "#" + n.slice(0, 6);
+  };
+
   const handleRegisterPlayer = async () => {
+    if (!username || !roomId) return;
+    setIsLoading(true);
+
+    const isFirstPlayer = characters.length === 0;
+
+    const position = {
+      x: getRandomNumber(-5, 5),
+      y: 0,
+      z: getRandomNumber(-5, 5),
+    };
+
+    const hairColor = generateRandomHexColor();
+    const pantsColor = generateRandomHexColor();
+    const shirtColor = generateRandomHexColor();
+
     try {
-      if (!username || !roomId) return;
-      setIsLoading(true);
-
-      const isFirstPlayer = Object.keys(players).length === 0;
-
-      const position = {
-        x: getRandomNumber(-15, 15),
-        y: 2,
-        z: getRandomNumber(-15, 15),
-      };
-
-      const { data: player } = await supabase
-        .from("players")
+      const { data: character, error } = await supabase
+        .from("characters")
         .insert([
           {
-            username: username,
+            username,
             position,
-            rotation: 0,
-            color: generateRandomHexColor(),
-            room_id: roomId,
-            online: true,
-            host: isFirstPlayer ? true : false,
+            hairColor,
+            pantsColor,
+            shirtColor,
+            roomId: roomId,
+            host: isFirstPlayer ?? false,
+            online: false,
+            ready: false,
+            team: "no",
+            updatedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
           },
         ])
         .select()
         .single();
 
-      if (player) {
-        setLocalPlayer(player);
+      if (error) {
+        throw new Error("Hiba a játékos regisztrációja közben: ", error);
+      }
 
+      if (character) {
         setUsername("");
 
-        router.push(`/rooms/${roomId}/user/${player.id}`);
+        router.push(`/rooms/${roomId}/user/${character.id}`);
       }
     } catch (error) {
-      console.error("Hiba a játékos regisztrációja közben: ", error);
+      console.log(error);
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +108,7 @@ const Room = ({ params }: { params: Promise<{ roomId: string }> }) => {
                 : "bg-slate-700 text-slate-400"
             }  cursor-pointer `}
             onClick={handleRegisterPlayer}
-            disabled={!username}
+            disabled={!username || isLoading}
           >
             {!isLoading ? <span>Tovább</span> : <Spinner size="small" />}
           </button>

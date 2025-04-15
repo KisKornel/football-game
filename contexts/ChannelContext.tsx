@@ -4,19 +4,17 @@ import React, {
   useEffect,
   ReactNode,
   useState,
+  useCallback,
 } from "react";
 import { supabase } from "@/utils/supabase/server";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { BallType, PlayerType, RoomType } from "@/types/types";
-import useGameStore from "@/store/gameStore";
+import useCharactersStore from "@/store/charactersStore";
+import { CharacterType } from "@/types/types";
 
 interface ChannelContextProps {
   channel: RealtimeChannel | null;
   isConnected: boolean;
   isStartGame: boolean;
-  onUpdatePlayer: (data: Partial<PlayerType>) => void;
-  onUpdateBall: (data: Partial<BallType>) => void;
-  onDeletePlayer: (id: string) => void;
 }
 
 interface ChannelProviderProps {
@@ -26,72 +24,55 @@ interface ChannelProviderProps {
 
 const MAX_GAME_MEMBERS = 2;
 
-const ChannelContext = createContext<ChannelContextProps | undefined>(
-  undefined,
-);
+const ChannelContext = createContext<ChannelContextProps | null>(null);
 
 export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const deletedPlayer = new Set<string>("");
-
-  const ball = useGameStore((state) => state.ball);
-  const addPlayer = useGameStore((state) => state.addPlayer);
-  const updatePlayer = useGameStore((state) => state.updatePlayer);
-  const deletePlayer = useGameStore((state) => state.deletePlayer);
-  const updateBall = useGameStore((state) => state.updateBall);
-  const updateRoom = useGameStore((state) => state.updateRoom);
-  const setScoreBoard = useGameStore((state) => state.setScoreBoard);
-  const updateScoreBoard = useGameStore((state) => state.updateScoreBoard);
+  const addCharacter = useCharactersStore((state) => state.addCharacter);
+  const removeCharacter = useCharactersStore((state) => state.removeCharacter);
+  const updateCharacter = useCharactersStore((state) => state.updateCharacter);
+  const setCharacters = useCharactersStore((state) => state.setCharacters);
 
   const [isStartGame, setIsStartGame] = useState(false);
 
-  useEffect(() => {
-    const getPlayers = async () => {
-      console.log("Get all players");
+  const getAllCharacters = useCallback(async () => {
+    if (!roomId) return;
 
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("room_id", roomId);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      if (data) {
-        data.forEach((player) => addPlayer(player.id, player));
-      }
-    };
-
-    const getScoreBoard = async () => {
-      const { data: score_board, error } = await supabase
-        .from("score_board")
-        .select("*")
-        .eq("room_id", roomId)
-        .single();
+    try {
+      const { data: characters, error } = await supabase
+        .from("characters")
+        .select("*");
 
       if (error) {
-        console.error(error);
-        return;
+        throw new Error("Get all character error!");
       }
 
-      if (score_board) {
-        setScoreBoard(score_board);
+      if (characters && characters.length > 0) {
+        setCharacters(characters);
       }
-    };
-
-    getPlayers();
-    getScoreBoard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [roomId, setCharacters]);
 
   useEffect(() => {
+    getAllCharacters();
+  }, [getAllCharacters]);
+
+  useEffect(() => {
+    console.log("Channel is connecting...");
+
     if (channel || isConnected) return;
 
-    const newChannel = supabase.channel(`room-${roomId}-channel`);
+    const newChannel = supabase.channel(`room-${roomId}-channel`, {
+      config: {
+        broadcast: {
+          self: true,
+        },
+      },
+    });
 
     const subscription = newChannel
       .on(
@@ -99,88 +80,33 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
         {
           event: "*",
           schema: "public",
-          table: "rooms",
-          filter: `id=eq.${roomId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "UPDATE") {
-            const { id, ...data } = payload.new as RoomType;
-            updateRoom(id, { ...data });
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "players",
-          filter: `room_id=eq.${roomId}`,
+          table: "characters",
+          filter: `roomId=eq.${roomId}`,
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            console.log("INSERT User: ", payload.new);
+            const data = payload.new;
+            console.log("Insert character: ", data);
 
-            const { id, ...data } = payload.new as PlayerType;
-
-            addPlayer(id, { id, ...data });
+            addCharacter(data as CharacterType);
           }
 
           if (payload.eventType === "UPDATE") {
-            console.log("UPDATE User: ", payload.new);
+            const data = payload.new;
+            console.log("Update character: ", data);
 
-            const { id, ...data } = payload.new as PlayerType;
-
-            updatePlayer(id, { ...data });
+            updateCharacter(data as CharacterType);
 
             if (data.ready) {
               checkIfAllPlayersReady();
             }
           }
-
-          if (payload.eventType === "DELETE") {
-            console.log("DELETE User: ", payload.old);
-
-            const { id } = payload.old as PlayerType;
-
-            deletePlayer(id);
-          }
         },
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "score_board",
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "UPDATE") {
-            const { home, away } = payload.new;
-            updateScoreBoard({ home, away });
-          }
-        },
-      )
-      .on("broadcast", { event: "update_player" }, ({ payload }) => {
-        const { id, ...data } = payload as PlayerType;
+      .on("broadcast", { event: "delete-character" }, ({ payload }) => {
+        console.log("Delete character: ", payload);
 
-        if (deletedPlayer.has(id)) return;
-
-        updatePlayer(id, { ...data });
-      })
-      .on("broadcast", { event: "delete_player" }, ({ payload }) => {
-        const { id } = payload as PlayerType;
-
-        deletedPlayer.add(id);
-        deletePlayer(id);
-      })
-      .on("broadcast", { event: "update_ball" }, ({ payload }) => {
-        const { position, lastUpdate, lastTouchedBy } = payload;
-
-        if (lastUpdate > ball.lastUpdate) {
-          updateBall({ position, lastUpdate, lastTouchedBy });
-        }
+        removeCharacter(payload.id);
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -196,15 +122,15 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
       newChannel.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [addCharacter, roomId, updateCharacter]);
 
   const checkIfAllPlayersReady = async () => {
     console.log("Checking...");
 
     const { data, error } = await supabase
-      .from("players")
+      .from("characters")
       .select("*")
-      .eq("room_id", roomId)
+      .eq("roomId", roomId)
       .eq("ready", true);
 
     if (error) {
@@ -217,43 +143,12 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
     }
   };
 
-  const onUpdatePlayer = (data: Partial<PlayerType>) => {
-    channel?.send({
-      type: "broadcast",
-      event: "update_player",
-      payload: data,
-    });
-  };
-
-  const onDeletePlayer = (id: string) => {
-    console.log("Delete player with ID: ", id);
-
-    channel?.send({
-      type: "broadcast",
-      event: "delete_player",
-      payload: {
-        id,
-      },
-    });
-  };
-
-  const onUpdateBall = (data: Partial<BallType>) => {
-    channel?.send({
-      type: "broadcast",
-      event: "update_ball",
-      payload: data,
-    });
-  };
-
   return (
     <ChannelContext.Provider
       value={{
         channel,
         isConnected,
         isStartGame,
-        onUpdatePlayer,
-        onDeletePlayer,
-        onUpdateBall,
       }}
     >
       {children}
@@ -263,7 +158,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
 
 export const useChannelContext = () => {
   const context = useContext(ChannelContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useChannelContext must be used within a ChannelProvider");
   }
   return context;
