@@ -17,8 +17,7 @@ import Wall from "./Wall";
 import SoccerBall from "./SoccerBall";
 import useCharactersStore from "@/store/charactersStore";
 import SoccerField from "./SoccerField";
-import * as THREE from "three";
-import { Character } from "./Character";
+import { CharacterController } from "./CharacterController";
 
 export const Experience = () => {
   const characters = useCharactersStore((state) => state.characters);
@@ -34,27 +33,17 @@ export const Experience = () => {
         <SoccerField />
         <Wall />
         <SoccerGoal
+          team="home"
           position={{ x: 9.55, y: 0, z: 0 }}
           rotation={{ x: 0, y: Math.PI / 2, z: 0 }}
         />
         <SoccerGoal
+          team="away"
           position={{ x: -9.55, y: 0, z: 0 }}
           rotation={{ x: 0, y: -Math.PI / 2, z: 0 }}
         />
         {characters.map((character) => (
-          <Character
-            key={character.id}
-            position={
-              new THREE.Vector3(
-                character.position.x,
-                character.position.y,
-                character.position.z,
-              )
-            }
-            hairColor={character.hairColor}
-            shirtColor={character.shirtColor}
-            pantsColor={character.pantsColor}
-          />
+          <CharacterController key={character.id} character={character} />
         ))}
         <SoccerBall />
       </Physics>

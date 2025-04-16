@@ -1,34 +1,40 @@
 import { create } from "zustand";
-import { ScoreBoardType } from "@/types/types";
+import { PositionType, ScoreBoardType } from "@/types/types";
 import { generateRandomId } from "@/utils/functions/functions";
 
 interface State {
   scoreBoard: ScoreBoardType;
+  ballPosition: PositionType;
 }
 
 interface Actions {
-  incraseHome: () => void;
-  incraseAway: () => void;
+  increaseHome: () => void;
+  increaseAway: () => void;
   resetScoreBoard: () => void;
+  resetBallPosition: () => void;
 }
 
-const initScoreBoard = {
+const initScoreBoard: ScoreBoardType = {
   id: generateRandomId(),
   home: 0,
   away: 0,
 };
 
-const useScoreStore = create<State & Actions>()((set) => ({
+const initBallPosition: PositionType = { x: 0, y: 5, z: 0 };
+
+const useGameStore = create<State & Actions>()((set) => ({
   scoreBoard: initScoreBoard,
-  incraseHome: () =>
+  ballPosition: initBallPosition,
+  increaseHome: () =>
     set((state) => ({
       scoreBoard: { ...state.scoreBoard, home: state.scoreBoard.home + 1 },
     })),
-  incraseAway: () =>
+  increaseAway: () =>
     set((state) => ({
       scoreBoard: { ...state.scoreBoard, away: state.scoreBoard.away + 1 },
     })),
   resetScoreBoard: () => set({ scoreBoard: initScoreBoard }),
+  resetBallPosition: () => set({ ballPosition: initBallPosition }),
 }));
 
-export default useScoreStore;
+export default useGameStore;

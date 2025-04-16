@@ -6,7 +6,7 @@ export interface RoomType {
 }
 
 export type TeamType = "home" | "away" | "no";
-type PositionType = { x: number; y: number; z: number };
+export type PositionType = { x: number; y: number; z: number };
 
 export interface CharacterType {
   id: string;
@@ -22,14 +22,6 @@ export interface CharacterType {
   ready: boolean;
   host: boolean;
   createdAt: string;
-  updatedAt: string;
-}
-
-export interface BallType {
-  id: string;
-  color: string;
-  position: PositionType;
-  lastTouchedBy: string;
   updatedAt: string;
 }
 

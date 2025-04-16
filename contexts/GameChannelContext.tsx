@@ -8,6 +8,7 @@ import React, {
 import { supabase } from "@/utils/supabase/server";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import useCharactersStore from "@/store/charactersStore";
+import useGameStore from "@/store/gameStore";
 
 interface GameChannelContextProps {
   channel: RealtimeChannel | null;
@@ -29,6 +30,9 @@ export const GameChannelProvider = ({
   const [isConnected, setIsConnected] = useState(false);
 
   const updateCharacter = useCharactersStore((state) => state.updateCharacter);
+  const increaseHome = useGameStore((state) => state.increaseHome);
+  const increaseAway = useGameStore((state) => state.increaseAway);
+  const resetBallPosition = useGameStore((state) => state.resetBallPosition);
 
   useEffect(() => {
     console.log("Game channel is connecting...");
@@ -49,8 +53,16 @@ export const GameChannelProvider = ({
 
         updateCharacter(payload);
       })
-      .on("broadcast", { event: "shoot-ball" }, ({ payload }) => {
-        console.log("Shoot ball: ", payload);
+      .on("broadcast", { event: "increase-score" }, ({ payload }) => {
+        console.log("Increase score: ", payload);
+
+        if (payload.team === "home") {
+          increaseHome();
+        } else {
+          increaseAway();
+        }
+
+        resetBallPosition();
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {

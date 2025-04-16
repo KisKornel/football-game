@@ -9,7 +9,7 @@ import {
 import { Experience } from "./Experience";
 
 const keyboardMap: KeyboardControlsEntry<string>[] = [
-  { name: "shoot", keys: ["KeyK"] },
+  { name: "kick", keys: ["KeyK"] },
 ];
 
 const Game = () => {

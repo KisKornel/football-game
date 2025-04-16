@@ -1,41 +1,59 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { Gltf, useKeyboardControls } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useParams } from "next/navigation";
-import useCharactersStore from "@/store/charactersStore";
+import { Gltf } from "@react-three/drei";
 import * as THREE from "three";
+import useCharactersStore from "@/store/charactersStore";
 
 export const SoccerBall = () => {
-  const params = useParams<{ roomId: string; userId: string }>();
-  const { userId } = params;
-
-  const character = useCharactersStore((state) =>
-    state.getCharactersById(userId),
-  );
-
   const rb = useRef<RapierRigidBody>(null);
-  const [, get] = useKeyboardControls();
+  const ballRef = useRef<THREE.Group | null>(null);
 
-  useFrame(() => {
-    if (rb.current && character && get().shoot) {
-      const pos = rb.current.translation();
-      const ballPosVect3 = new THREE.Vector3(pos.x, pos.y, pos.z);
-      const characterPosVect3 = new THREE.Vector3(
-        character.position.x,
-        character.position.y,
-        character.position.z,
-      );
+  const characters = useCharactersStore((state) => state.characters);
 
-      if (ballPosVect3.distanceTo(characterPosVect3) < 0.5) {
-        console.log("Shoot");
-      }
+  useEffect(() => {
+    if (characters) {
+      characters.map((c) => {
+        if (rb.current) {
+          console.log("van");
+
+          const pos = rb.current.translation();
+          const ballPosVect3 = new THREE.Vector3(pos.x, pos.y, pos.z);
+          const characterVect3 = new THREE.Vector3(
+            c.position.x,
+            c.position.y,
+            c.position.z,
+          );
+
+          if (characterVect3.distanceTo(ballPosVect3) < 0.5) {
+            console.log("Kick ball");
+
+            const direction = ballPosVect3
+              .clone()
+              .sub(characterVect3)
+              .normalize()
+              .multiplyScalar(0.05);
+
+            const impulse = {
+              x: direction.x,
+              y: 0,
+              z: direction.z,
+            };
+
+            rb.current.applyImpulse(impulse, true);
+          }
+        }
+      });
     }
-  });
+  }, [characters]);
 
   return (
     <RigidBody ref={rb} name="ball" colliders="ball">
-      <Gltf src="/models/Simple soccer football.glb" scale={0.18} castShadow />
+      <Gltf
+        ref={ballRef}
+        src="/models/Simple soccer football.glb"
+        scale={0.18}
+        castShadow
+      />
     </RigidBody>
   );
 };

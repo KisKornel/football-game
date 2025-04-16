@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase/server";
 import { DeleteIcon } from "@/components/svg/deleteIcon";
-import useScoreStore from "@/store/scoreStore";
+import useGameStore from "@/store/gameStore";
 import { useChannelContext } from "@/contexts/ChannelContext";
 
 const Game = dynamic(() => import("@/components/Game"), {
@@ -23,8 +23,8 @@ const GamePage = ({
 
   const { channel } = useChannelContext();
 
-  const scoreBoard = useScoreStore((state) => state.scoreBoard);
-  const resetScoreBoard = useScoreStore((state) => state.resetScoreBoard);
+  const scoreBoard = useGameStore((state) => state.scoreBoard);
+  const resetScoreBoard = useGameStore((state) => state.resetScoreBoard);
 
   const handleDeletePlayer = async () => {
     if (!roomId || !userId) return;

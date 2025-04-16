@@ -6,13 +6,18 @@ import { Box, Text } from "@react-three/drei";
 import { MeshStandardMaterial } from "three";
 import { Colors } from "@/enums/enums";
 import * as THREE from "three";
+import { TeamType } from "@/types/types";
+import { useGameChannelContext } from "@/contexts/GameChannelContext";
 
 interface SoccerGoalProps {
+  team: TeamType;
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
 }
 
-const SoccerGoal = ({ position, rotation }: SoccerGoalProps) => {
+const SoccerGoal = ({ position, rotation, team }: SoccerGoalProps) => {
+  const { channel } = useGameChannelContext();
+
   const [intersecting, setIntersection] = useState(false);
 
   const pos = useMemo(
@@ -30,6 +35,15 @@ const SoccerGoal = ({ position, rotation }: SoccerGoalProps) => {
   );
 
   const handleOnIntersectionEnter = async () => {
+    if (channel) {
+      channel.send({
+        type: "broadcast",
+        event: "increase-score",
+        payload: {
+          team: team === "home" ? "home" : "away",
+        },
+      });
+    }
     setIntersection(true);
   };
 
