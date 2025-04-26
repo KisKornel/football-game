@@ -7,9 +7,12 @@ import { CharacterType } from "@/types/types";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
+  CollisionEnterPayload,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
+import { getSocket } from "@/socket";
+import { useParams } from "next/navigation";
 
 interface CharacterControllerProps {
   character: CharacterType;
@@ -20,6 +23,10 @@ const MOVEMENT_SPEED = 5;
 export const CharacterController = ({
   character,
 }: CharacterControllerProps) => {
+  const params = useParams<{ roomId: string; userId: string }>();
+  const { roomId } = params;
+  const socket = getSocket();
+
   const initialPosition = useMemo(
     () =>
       new THREE.Vector3(
@@ -35,6 +42,34 @@ export const CharacterController = ({
   const [animation, setAnimation] = useState<ActionName>(
     "HumanArmature|Man_Idle",
   );
+
+  const onCollision = (e: CollisionEnterPayload) => {
+    if (
+      roomId &&
+      rb.current &&
+      e.other.rigidBodyObject &&
+      e.other.rigidBodyObject.name === "ball"
+    ) {
+      const p = rb.current.translation();
+      const b = e.other.rigidBodyObject.position;
+
+      const dir = {
+        x: b.x - p.x,
+        y: 0,
+        z: b.z - p.z,
+      };
+
+      const len = Math.hypot(dir.x, dir.z);
+      if (len === 0) return;
+      dir.x /= len;
+      dir.z /= len;
+
+      const IMPULSE = 0.05;
+      const impulse = { x: dir.x * IMPULSE, y: 0, z: dir.z * IMPULSE };
+
+      socket.emit("hit-ball", { roomId, force: impulse });
+    }
+  };
 
   useFrame((_, delta) => {
     if (!rb.current) return;
@@ -94,16 +129,17 @@ export const CharacterController = ({
       colliders={false}
       enabledRotations={[false, false, false]}
       position={initialPosition}
+      onCollisionEnter={onCollision}
+      name={`player-${character.id}`}
     >
       <CapsuleCollider args={[0.7, 0.2]} position={[0, 0.6, 0]} />
-      <group name={`user-${character.id}`}>
-        <Character
-          hairColor={character.hairColor}
-          shirtColor={character.shirtColor}
-          pantsColor={character.pantsColor}
-          animation={animation}
-        />
-      </group>
+
+      <Character
+        hairColor={character.hairColor}
+        shirtColor={character.shirtColor}
+        pantsColor={character.pantsColor}
+        animation={animation}
+      />
     </RigidBody>
   );
 };

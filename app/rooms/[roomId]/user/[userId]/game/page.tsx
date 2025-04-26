@@ -7,6 +7,7 @@ import { supabase } from "@/utils/supabase/server";
 import { DeleteIcon } from "@/components/svg/deleteIcon";
 import useGameStore from "@/store/gameStore";
 import { useChannelContext } from "@/contexts/ChannelContext";
+import { useGameChannelContext } from "@/contexts/GameChannelContext";
 
 const Game = dynamic(() => import("@/components/Game"), {
   ssr: false,
@@ -22,6 +23,7 @@ const GamePage = ({
   const router = useRouter();
 
   const { channel } = useChannelContext();
+  const { isConnected, transport } = useGameChannelContext();
 
   const scoreBoard = useGameStore((state) => state.scoreBoard);
   const resetScoreBoard = useGameStore((state) => state.resetScoreBoard);
@@ -55,6 +57,12 @@ const GamePage = ({
 
   return (
     <div className="flex flex-col w-full h-screen">
+      <div className="absolute top-10 left-2 flex flex-col justify-center items-start z-50">
+        <p className="text-xs">
+          Status: {isConnected ? "connected" : "disconnected"}
+        </p>
+        <p className="text-xs">Transport: {transport}</p>
+      </div>
       <div className="py-2 w-full flex flex-row justify-center items-center z-100 bg-slate-800">
         <p>
           Hazai {scoreBoard.home} - {scoreBoard.away} Vendég

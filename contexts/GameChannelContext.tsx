@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   createContext,
   useContext,
@@ -5,13 +7,13 @@ import React, {
   ReactNode,
   useState,
 } from "react";
-import { supabase } from "@/utils/supabase/server";
-import { RealtimeChannel } from "@supabase/supabase-js";
 import useCharactersStore from "@/store/charactersStore";
+import { getSocket } from "@/socket";
+import { BallType, CharacterType, TeamType } from "@/types/types";
 import useGameStore from "@/store/gameStore";
 
 interface GameChannelContextProps {
-  channel: RealtimeChannel | null;
+  transport: string;
   isConnected: boolean;
 }
 
@@ -20,70 +22,83 @@ interface GameChannelProviderProps {
   children: ReactNode;
 }
 
-const GameChannelContext = createContext<GameChannelContextProps | null>(null);
+const GameChannelContext = createContext<GameChannelContextProps>({
+  transport: "N/A",
+  isConnected: false,
+});
 
 export const GameChannelProvider = ({
   roomId,
   children,
 }: GameChannelProviderProps) => {
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [transport, setTransport] = useState("N/A");
 
   const updateCharacter = useCharactersStore((state) => state.updateCharacter);
+  const setBall = useGameStore((state) => state.setBall);
   const increaseHome = useGameStore((state) => state.increaseHome);
   const increaseAway = useGameStore((state) => state.increaseAway);
-  const resetBallPosition = useGameStore((state) => state.resetBallPosition);
+  const resetBall = useGameStore((state) => state.resetBall);
 
   useEffect(() => {
-    console.log("Game channel is connecting...");
+    const socket = getSocket();
 
-    if (channel || isConnected) return;
+    const onConnect = () => {
+      setIsConnected(true);
+      setTransport(socket.io.engine.transport.name);
+      socket.emit("join-room", roomId);
+    };
+    const onDisconnect = () => {
+      setIsConnected(false);
+      setTransport("N/A");
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onUpgrade = (t: any) => setTransport(t.name);
 
-    const newChannel = supabase.channel(`game-${roomId}-channel`, {
-      config: {
-        broadcast: {
-          self: true,
-        },
-      },
-    });
+    const onPlayerMoved = (
+      data: Pick<CharacterType, "id" | "position" | "roomId">,
+    ) => {
+      console.log("Player moved: ", data);
+      updateCharacter(data);
+    };
 
-    const subscription = newChannel
-      .on("broadcast", { event: "move-character" }, ({ payload }) => {
-        console.log("Move character: ", payload);
+    const onBallMoved = ({ position, velocity, rotation }: BallType) => {
+      setBall({ position, velocity, rotation });
+    };
 
-        updateCharacter(payload);
-      })
-      .on("broadcast", { event: "increase-score" }, ({ payload }) => {
-        console.log("Increase score: ", payload);
+    const onGoalScored = ({ team }: { team: TeamType }) => {
+      console.log("Goal team: ", team);
 
-        if (payload.team === "home") {
-          increaseHome();
-        } else {
-          increaseAway();
-        }
+      if (team === "home") {
+        increaseHome();
+      } else {
+        increaseAway();
+      }
 
-        resetBallPosition();
-      })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setChannel(newChannel);
-          setIsConnected(true);
+      resetBall();
+    };
 
-          console.log("Game channel connected!");
-        }
-      });
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.io.engine.on("upgrade", onUpgrade);
+    socket.on("playerMoved", onPlayerMoved);
+    socket.on("world-tick", onBallMoved);
+    socket.on("goal-scored", onGoalScored);
 
     return () => {
-      subscription.unsubscribe();
-      newChannel.unsubscribe();
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.io.engine.off("upgrade", onUpgrade);
+      socket.off("playerMoved", onPlayerMoved);
+      socket.off("world-tick", onBallMoved);
+      socket.off("goal-scored", onGoalScored);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, updateCharacter]);
+  }, [increaseAway, increaseHome, resetBall, roomId, setBall, updateCharacter]);
 
   return (
     <GameChannelContext.Provider
       value={{
-        channel,
+        transport,
         isConnected,
       }}
     >

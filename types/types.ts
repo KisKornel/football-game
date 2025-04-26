@@ -6,13 +6,18 @@ export interface RoomType {
 }
 
 export type TeamType = "home" | "away" | "no";
-export type PositionType = { x: number; y: number; z: number };
+export type Vec3 = { x: number; y: number; z: number };
+export type Quat = {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+};
 
 export interface CharacterType {
   id: string;
   username: string;
-  color: string;
-  position: PositionType;
+  position: Vec3;
   hairColor: string;
   shirtColor: string;
   pantsColor: string;
@@ -29,4 +34,10 @@ export interface ScoreBoardType {
   id: string;
   home: number;
   away: number;
+}
+
+export interface BallType {
+  position: Vec3;
+  velocity: Vec3;
+  rotation: Quat;
 }

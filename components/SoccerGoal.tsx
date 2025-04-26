@@ -7,7 +7,8 @@ import { MeshStandardMaterial } from "three";
 import { Colors } from "@/enums/enums";
 import * as THREE from "three";
 import { TeamType } from "@/types/types";
-import { useGameChannelContext } from "@/contexts/GameChannelContext";
+import { useParams } from "next/navigation";
+import { getSocket } from "@/socket";
 
 interface SoccerGoalProps {
   team: TeamType;
@@ -16,8 +17,9 @@ interface SoccerGoalProps {
 }
 
 const SoccerGoal = ({ position, rotation, team }: SoccerGoalProps) => {
-  const { channel } = useGameChannelContext();
-
+  const params = useParams<{ roomId: string; userId: string }>();
+  const { roomId } = params;
+  const socket = getSocket();
   const [intersecting, setIntersection] = useState(false);
 
   const pos = useMemo(
@@ -35,16 +37,8 @@ const SoccerGoal = ({ position, rotation, team }: SoccerGoalProps) => {
   );
 
   const handleOnIntersectionEnter = async () => {
-    if (channel) {
-      channel.send({
-        type: "broadcast",
-        event: "increase-score",
-        payload: {
-          team: team === "home" ? "home" : "away",
-        },
-      });
-    }
     setIntersection(true);
+    socket.emit("goal-scored", { roomId, team });
   };
 
   const handleOnIntersectionExit = () => {
