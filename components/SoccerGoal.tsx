@@ -20,6 +20,7 @@ const SoccerGoal = ({ position, rotation, team }: SoccerGoalProps) => {
   const params = useParams<{ roomId: string; userId: string }>();
   const { roomId } = params;
   const socket = getSocket();
+  const [hasScored, setHasScored] = useState(false);
   const [intersecting, setIntersection] = useState(false);
 
   const pos = useMemo(
@@ -37,12 +38,17 @@ const SoccerGoal = ({ position, rotation, team }: SoccerGoalProps) => {
   );
 
   const handleOnIntersectionEnter = async () => {
+    if (hasScored) return;
+    setHasScored(true);
     setIntersection(true);
     socket.emit("goal-scored", { roomId, team });
   };
 
   const handleOnIntersectionExit = () => {
-    setIntersection(false);
+    setTimeout(() => {
+      setIntersection(false);
+    }, 3000);
+    setHasScored(false);
   };
 
   return (

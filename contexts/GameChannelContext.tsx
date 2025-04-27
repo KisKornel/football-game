@@ -38,7 +38,6 @@ export const GameChannelProvider = ({
   const setBall = useGameStore((state) => state.setBall);
   const increaseHome = useGameStore((state) => state.increaseHome);
   const increaseAway = useGameStore((state) => state.increaseAway);
-  const resetBall = useGameStore((state) => state.resetBall);
 
   useEffect(() => {
     const socket = getSocket();
@@ -74,8 +73,6 @@ export const GameChannelProvider = ({
       } else {
         increaseAway();
       }
-
-      resetBall();
     };
 
     socket.on("connect", onConnect);
@@ -93,7 +90,7 @@ export const GameChannelProvider = ({
       socket.off("world-tick", onBallMoved);
       socket.off("goal-scored", onGoalScored);
     };
-  }, [increaseAway, increaseHome, resetBall, roomId, setBall, updateCharacter]);
+  }, [increaseAway, increaseHome, roomId, setBall, updateCharacter]);
 
   return (
     <GameChannelContext.Provider

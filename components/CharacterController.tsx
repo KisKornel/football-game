@@ -19,6 +19,7 @@ interface CharacterControllerProps {
 }
 
 const MOVEMENT_SPEED = 5;
+const IMPULSE = 0.05;
 
 export const CharacterController = ({
   character,
@@ -55,7 +56,7 @@ export const CharacterController = ({
 
       const dir = {
         x: b.x - p.x,
-        y: 0,
+        y: 0.02,
         z: b.z - p.z,
       };
 
@@ -64,8 +65,7 @@ export const CharacterController = ({
       dir.x /= len;
       dir.z /= len;
 
-      const IMPULSE = 0.05;
-      const impulse = { x: dir.x * IMPULSE, y: 0, z: dir.z * IMPULSE };
+      const impulse = { x: dir.x * IMPULSE, y: dir.y, z: dir.z * IMPULSE };
 
       socket.emit("hit-ball", { roomId, force: impulse });
     }

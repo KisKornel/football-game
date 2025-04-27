@@ -12,7 +12,6 @@ interface Actions {
   increaseAway: () => void;
   resetScoreBoard: () => void;
   setBall: (ball: BallType) => void;
-  resetBall: () => void;
 }
 
 const initScoreBoard: ScoreBoardType = {
@@ -44,7 +43,6 @@ const useGameStore = create<State & Actions>()((set) => ({
     })),
   setBall: (ball) => set({ ball }),
   resetScoreBoard: () => set({ scoreBoard: initScoreBoard }),
-  resetBall: () => set({ ball: initBall }),
 }));
 
 export default useGameStore;

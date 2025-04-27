@@ -7,11 +7,12 @@ import RAPIER, { RigidBody, World } from "@dimforge/rapier3d-compat";
 interface RoomState {
   world: World;
   ballBody: RigidBody;
-  eventQueue: RAPIER.EventQueue;
-  sensorMap: Map<number, Omit<TeamType, "no">>;
+  goalInProgress: boolean;
 }
 
 const TICK = 1 / 60;
+const FIELD_HALF_X = 10;
+const FIELD_HALF_Z = 10;
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -97,12 +98,11 @@ app.prepare().then(async () => {
         });
 
         const goalDefs = [
-          { base: [9.55, 0, 0], rotY: Math.PI / 2, team: "home" as TeamType },
-          { base: [-9.55, 0, 0], rotY: -Math.PI / 2, team: "away" as TeamType },
+          { base: [9.55, 0, 0], rotY: Math.PI / 2 },
+          { base: [-9.55, 0, 0], rotY: -Math.PI / 2 },
         ];
 
-        const sensorMap = new Map<number, Omit<TeamType, "no">>();
-        goalDefs.forEach(({ base, rotY, team }) => {
+        goalDefs.forEach(({ base, rotY }) => {
           const [bx, by, bz] = base;
 
           world.createCollider(
@@ -130,25 +130,12 @@ app.prepare().then(async () => {
               )
               .setRotation(quatFromY(rotY)),
           );
-
-          const sensorDesc = RAPIER.ColliderDesc.cuboid(1.2 / 2, 1 / 2, 0.1 / 2)
-            .setTranslation(
-              bx + Math.cos(rotY) * 0.15,
-              by + 1,
-              bz + Math.sin(rotY) * 0.15,
-            )
-            .setRotation(quatFromY(rotY))
-            .setSensor(true);
-
-          const sensor = world.createCollider(sensorDesc);
-
-          sensorMap.set(sensor.handle, team);
         });
 
         const desc = RAPIER.RigidBodyDesc.dynamic()
           .setTranslation(0, 5, 0)
           .setLinearDamping(0.5)
-          .setAngularDamping(0.3);
+          .setAngularDamping(0.8);
 
         const ballBody = world.createRigidBody(desc);
         ballBody.setRotation(new RAPIER.Quaternion(0, 0, 0, 1), true);
@@ -159,9 +146,11 @@ app.prepare().then(async () => {
           .setFriction(0.8);
         world.createCollider(ballCollider, ballBody);
 
-        const eventQueue = new RAPIER.EventQueue(true);
-
-        rooms.set(roomId, { world, ballBody, eventQueue, sensorMap });
+        rooms.set(roomId, {
+          world,
+          ballBody,
+          goalInProgress: false,
+        });
       }
     });
 
@@ -179,15 +168,20 @@ app.prepare().then(async () => {
 
     socket.on(
       "goal-scored",
-      ({ roomId, team }: { roomId: string; team: TeamType }) => {
+      ({ roomId, team }: { roomId: string; team: Omit<TeamType, "no"> }) => {
+        const inst = rooms.get(roomId);
+
+        if (!inst || inst.goalInProgress) return;
+
+        inst.goalInProgress = true;
+
         io.to(roomId).emit("goal-scored", { team });
 
-        const inst = rooms.get(roomId);
-        if (inst) {
-          inst.ballBody.setTranslation({ x: 0, y: 5, z: 0 }, true);
-          inst.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
-          inst.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
-        }
+        inst.ballBody.setTranslation({ x: 0, y: 5, z: 0 }, true);
+        inst.ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        inst.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+        setTimeout(() => (inst.goalInProgress = false), 1000);
       },
     );
 
@@ -198,33 +192,18 @@ app.prepare().then(async () => {
 
   setInterval(() => {
     for (const [roomId, inst] of rooms) {
-      const { world, ballBody, eventQueue, sensorMap } = inst;
+      const { world, ballBody } = inst;
 
-      world.step(eventQueue);
-
-      eventQueue.drainContactForceEvents((event) => {
-        const h1 = event.collider1();
-        const h2 = event.collider2();
-        const ballHandle = ballBody.handle;
-
-        let sensorHandle: number | null = null;
-        if (h1 === ballHandle) sensorHandle = h2;
-        else if (h2 === ballHandle) sensorHandle = h1;
-        if (sensorHandle == null) return;
-
-        console.log("Sensor: ", sensorHandle);
-
-        const team = sensorMap.get(sensorHandle);
-        if (team) {
-          io.to(roomId).emit("goal-scored", { team });
-
-          ballBody.setTranslation({ x: 0, y: 5, z: 0 }, true);
-          ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
-          ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
-        }
-      });
+      world.step();
 
       const p = ballBody.translation();
+
+      if (Math.abs(p.x) > FIELD_HALF_X || Math.abs(p.z) > FIELD_HALF_Z) {
+        ballBody.setTranslation({ x: 0, y: 5, z: 0 }, true);
+        ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      }
+
       const v = ballBody.linvel();
       const rot = ballBody.rotation();
       io.to(roomId).emit("world-tick", {
