@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { BallType, ScoreBoardType } from "@/types/types";
-import { generateRandomId } from "@/utils/functions/functions";
 
 interface State {
   scoreBoard: ScoreBoardType;
@@ -15,7 +14,6 @@ interface Actions {
 }
 
 const initScoreBoard: ScoreBoardType = {
-  id: generateRandomId(),
   home: 0,
   away: 0,
 };

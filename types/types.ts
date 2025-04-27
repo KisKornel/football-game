@@ -31,7 +31,6 @@ export interface CharacterType {
 }
 
 export interface ScoreBoardType {
-  id: string;
   home: number;
   away: number;
 }
