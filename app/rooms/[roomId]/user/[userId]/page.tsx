@@ -10,8 +10,8 @@ import { Spinner } from "@/components/svg/spinner";
 import { ChooseTeam } from "@/components/ChooseTeam";
 import Loading from "@/components/Loading";
 import { useChannelContext } from "@/contexts/ChannelContext";
+import { gameConfig } from "@/config/gameConfig";
 
-const MAX_SIZE_TEAM = 1;
 const COUNTER = 2;
 
 const UserPage = ({
@@ -70,7 +70,7 @@ const UserPage = ({
   const isTeamMaxSize = (team: TeamType) => {
     const size = characters.filter((c) => c.team === team).length;
 
-    return size === MAX_SIZE_TEAM;
+    return size === gameConfig.maxTeamSize;
   };
 
   const startCountdown = useCallback(
@@ -179,7 +179,7 @@ const UserPage = ({
               {characters
                 .filter((c) => c.roomId === roomId)
                 .some((c) => c.team === "no") ||
-              characters.length !== MAX_SIZE_TEAM * 2 ? (
+              characters.length !== gameConfig.maxTeamSize * 2 ? (
                 <div>Várakozás a többi játékosra...</div>
               ) : (
                 <div>

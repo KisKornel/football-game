@@ -10,6 +10,7 @@ import { supabase } from "@/utils/supabase/server";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import useCharactersStore from "@/store/charactersStore";
 import { CharacterType } from "@/types/types";
+import { gameConfig } from "@/config/gameConfig";
 
 interface ChannelContextProps {
   channel: RealtimeChannel | null;
@@ -21,8 +22,6 @@ interface ChannelProviderProps {
   roomId: string;
   children: ReactNode;
 }
-
-const MAX_GAME_MEMBERS = 2;
 
 const ChannelContext = createContext<ChannelContextProps | null>(null);
 
@@ -137,7 +136,7 @@ export const ChannelProvider = ({ roomId, children }: ChannelProviderProps) => {
       console.log("Error check all players is ready: ", error);
     }
 
-    if (data && data.length === MAX_GAME_MEMBERS) {
+    if (data && data.length === gameConfig.maxTeamSize * 2) {
       console.log("All players are ready! Starting the game...");
       setIsStartGame(true);
     }

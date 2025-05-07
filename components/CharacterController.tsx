@@ -13,13 +13,11 @@ import {
 } from "@react-three/rapier";
 import { getSocket } from "@/socket";
 import { useParams } from "next/navigation";
+import { gameConfig } from "@/config/gameConfig";
 
 interface CharacterControllerProps {
   character: CharacterType;
 }
-
-const MOVEMENT_SPEED = 5;
-const IMPULSE = 0.05;
 
 export const CharacterController = ({
   character,
@@ -65,7 +63,11 @@ export const CharacterController = ({
       dir.x /= len;
       dir.z /= len;
 
-      const impulse = { x: dir.x * IMPULSE, y: dir.y, z: dir.z * IMPULSE };
+      const impulse = {
+        x: dir.x * gameConfig.ballImpulse,
+        y: dir.y,
+        z: dir.z * gameConfig.ballImpulse,
+      };
 
       socket.emit("hit-ball", { roomId, force: impulse });
     }
@@ -87,7 +89,7 @@ export const CharacterController = ({
 
     if (distance > 0) {
       const dir = toTarget.normalize();
-      const step = MOVEMENT_SPEED * delta;
+      const step = gameConfig.movementSpeed * delta;
       const isMoving = distance > step;
 
       const nextPos =

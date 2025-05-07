@@ -8,9 +8,10 @@ export function getSocket(): Socket {
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "", {
       path: "/socket.io",
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket", "webtransport"],
       autoConnect: true,
     });
   }
+
   return socket;
 }
